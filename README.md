@@ -55,34 +55,44 @@ go install github.com/Fybrk/fybrk/cli/cmd/fybrk@latest
 
 ## Quick Start
 
-### 1. Initialize a Sync Directory
+### 1. First Time Setup - Initialize Directory
 ```bash
 fybrk /your/sync/folder scan
 ```
+This creates a `.fybrk` folder with encryption keys and scans all files.
 
 ### 2. Start Synchronization
 ```bash
 fybrk /your/sync/folder sync
-# or simply
+# or simply (sync is the default)
 fybrk /your/sync/folder
 ```
+This starts real-time monitoring and syncing with other devices.
 
-### 3. List Synced Files
+### 3. Check What's Being Synced
 ```bash
 fybrk /your/sync/folder list
 ```
+Shows all tracked files with version and chunk information.
 
 ### 4. Multi-Device Setup
-1. Run `fybrk /your/folder sync` on each device
-2. Devices automatically discover each other on the local network
-3. Files sync instantly when changes are detected
+1. **First device**: Run `fybrk /your/folder scan` to initialize
+2. **Copy the folder** to other devices (including the `.fybrk` folder)
+3. **Each device**: Run `fybrk /your/folder sync`
+4. Devices automatically discover each other and sync changes
+
+### What Each Command Does
+
+- **scan**: First-time setup - creates `.fybrk` folder, generates encryption key, scans all files
+- **sync**: Starts real-time file monitoring and peer-to-peer synchronization  
+- **list**: Shows all files being tracked with their version and status
 
 ### Alternative Command Format
 You can also use command-first format:
 ```bash
-fybrk scan /your/sync/folder
-fybrk sync /your/sync/folder  
-fybrk list /your/sync/folder
+fybrk scan /your/sync/folder    # Initialize directory
+fybrk sync /your/sync/folder    # Start syncing
+fybrk list /your/sync/folder    # List tracked files
 ```
 
 ## Architecture
