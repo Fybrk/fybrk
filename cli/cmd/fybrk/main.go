@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/Fybrk/fybrk/internal/network"
 	"github.com/Fybrk/fybrk/pkg/fybrk"
 )
 
@@ -278,12 +280,31 @@ func runPair(client *fybrk.Client, syncPath string) {
 	
 	fmt.Println("Creating rendezvous point for internet pairing...")
 	
-	// TODO: Use actual network service to create QR code
-	// For now, show the concept
-	qrData := fmt.Sprintf("fybrk://pair?path=%s&key=%x&bootstrap=true", syncPath, key)
+	// Create pairing data with real QR code generation
+	pairingData := map[string]interface{}{
+		"version":        1,
+		"sync_path":      syncPath,
+		"encryption_key": fmt.Sprintf("%x", key),
+		"expires_at":     time.Now().Add(10 * time.Minute).Unix(),
+		"created_at":     time.Now().Unix(),
+		"device_id":      "temp-device-id", // TODO: Get from client
+	}
 	
-	fmt.Println("QR CODE DATA:")
-	fmt.Println(qrData)
+	// Generate QR code using real library
+	qrGen := network.NewQRGenerator()
+	qrData, err := qrGen.GenerateQRCode(pairingData)
+	if err != nil {
+		fmt.Printf("Error generating QR code: %v\n", err)
+		return
+	}
+	
+	// Display QR code in terminal
+	err = qrGen.DisplayQRCode(qrData, true) // Save to file as well
+	if err != nil {
+		fmt.Printf("Error displaying QR code: %v\n", err)
+		return
+	}
+	
 	fmt.Println()
 	fmt.Println("PAIRING INSTRUCTIONS:")
 	fmt.Println("1. On the other device: fybrk pair-with '<QR-CODE-DATA>'")

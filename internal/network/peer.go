@@ -3,11 +3,9 @@ package network
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
-	"strings"
 	"sync"
 	"time"
 
@@ -26,6 +24,9 @@ type PeerNetwork struct {
 	upnp        *UPnPClient // UPnP client for NAT traversal
 	bootstrap   *BootstrapService // Bootstrap service for internet discovery
 	holePuncher *HolePuncher // Hole puncher for NAT traversal
+	dht         *DHTService // DHT service for decentralized discovery
+	monitor     *ConnectionMonitor // Connection quality monitoring
+	qrGen       *QRGenerator // QR code generation
 }
 
 type Peer struct {
@@ -55,7 +56,7 @@ type FileResponse struct {
 func NewPeerNetwork(deviceID string, port int) *PeerNetwork {
 	ctx, cancel := context.WithCancel(context.Background())
 	
-	return &PeerNetwork{
+	pn := &PeerNetwork{
 		deviceID:    deviceID,
 		port:        port,
 		peers:       make(map[string]*Peer),
@@ -63,7 +64,25 @@ func NewPeerNetwork(deviceID string, port int) *PeerNetwork {
 		cancel:      cancel,
 		bootstrap:   NewBootstrapService(),
 		holePuncher: NewHolePuncher(),
+		dht:         NewDHTService(),
+		monitor:     NewConnectionMonitor(),
+		qrGen:       NewQRGenerator(),
 	}
+	
+	// Set up connection monitoring callbacks
+	pn.monitor.SetReconnectHandler(pn.handleReconnection)
+	pn.monitor.SetDisconnectHandler(pn.handleDisconnection)
+	
+	// Start DHT service
+	if err := pn.dht.Start(); err == nil {
+		// Announce this device on DHT
+		go func() {
+			time.Sleep(5 * time.Second) // Wait for DHT to initialize
+			pn.dht.AnnounceDevice(deviceID, port)
+		}()
+	}
+	
+	return pn
 }
 
 func (pn *PeerNetwork) Start() error {
@@ -277,7 +296,7 @@ func (pn *PeerNetwork) SetMessageHandler(handler func(deviceID string, msg *Mess
 	pn.onMessage = handler
 }
 
-// CreatePairingQR creates a QR code for internet-wide device pairing
+// CreatePairingQR creates a QR code for internet-wide device pairing with production features
 func (pn *PeerNetwork) CreatePairingQR(syncPath, encryptionKey string) (string, error) {
 	// Get public address via STUN
 	stunResp, err := pn.holePuncher.GetPublicAddress()
@@ -292,46 +311,29 @@ func (pn *PeerNetwork) CreatePairingQR(syncPath, encryptionKey string) (string, 
 		return "", fmt.Errorf("failed to create rendezvous: %v", err)
 	}
 	
-	// Create pairing data
+	// Create comprehensive pairing data
 	pairingData := map[string]interface{}{
-		"version":       1,
-		"rendezvous_id": rendezvous.ID,
-		"device_id":     pn.deviceID,
-		"sync_path":     syncPath,
+		"version":        2, // Updated version
+		"rendezvous_id":  rendezvous.ID,
+		"device_id":      pn.deviceID,
+		"sync_path":      syncPath,
 		"encryption_key": encryptionKey,
-		"expires_at":    rendezvous.ExpiresAt.Unix(),
+		"expires_at":     rendezvous.ExpiresAt.Unix(),
+		"created_at":     time.Now().Unix(),
+		"network_info":   networkInfo,
+		"capabilities":   []string{"hole_punch", "dht", "auto_reconnect"},
 	}
 	
-	// Convert to JSON
-	jsonData, err := json.Marshal(pairingData)
-	if err != nil {
-		return "", err
-	}
-	
-	// Create fybrk:// URL
-	qrData := fmt.Sprintf("fybrk://pair?data=%s", base64.URLEncoding.EncodeToString(jsonData))
-	
-	return qrData, nil
+	// Generate QR code using real library
+	return pn.qrGen.GenerateQRCode(pairingData)
 }
 
-// JoinFromQR joins a sync network from QR code data
+// JoinFromQR joins a sync network from QR code data with comprehensive error handling
 func (pn *PeerNetwork) JoinFromQR(qrData string) error {
-	// Parse fybrk:// URL
-	if !strings.HasPrefix(qrData, "fybrk://pair?data=") {
-		return fmt.Errorf("invalid QR code format")
-	}
-	
-	// Extract and decode data
-	encodedData := strings.TrimPrefix(qrData, "fybrk://pair?data=")
-	jsonData, err := base64.URLEncoding.DecodeString(encodedData)
+	// Parse QR data using real parser
+	pairingData, err := pn.qrGen.ParseQRData(qrData)
 	if err != nil {
-		return fmt.Errorf("failed to decode QR data: %v", err)
-	}
-	
-	// Parse pairing data
-	var pairingData map[string]interface{}
-	if err := json.Unmarshal(jsonData, &pairingData); err != nil {
-		return fmt.Errorf("failed to parse pairing data: %v", err)
+		return fmt.Errorf("failed to parse QR data: %v", err)
 	}
 	
 	// Extract rendezvous ID
@@ -340,22 +342,137 @@ func (pn *PeerNetwork) JoinFromQR(qrData string) error {
 		return fmt.Errorf("missing rendezvous ID in QR data")
 	}
 	
-	// Look up rendezvous
+	// Look up rendezvous with fallback to DHT
 	rendezvous, err := pn.bootstrap.FindRendezvous(rendezvousID)
 	if err != nil {
-		return fmt.Errorf("failed to find rendezvous: %v", err)
+		// Try DHT fallback
+		if addrs, dhtErr := pn.dht.FindRendezvous(rendezvousID); dhtErr == nil && len(addrs) > 0 {
+			// Create mock rendezvous from DHT data
+			rendezvous = &RendezvousInfo{
+				ID:          rendezvousID,
+				NetworkInfo: addrs[0], // DHT returns strings now
+				ExpiresAt:   time.Now().Add(5 * time.Minute),
+			}
+		} else {
+			return fmt.Errorf("failed to find rendezvous: %v (DHT: %v)", err, dhtErr)
+		}
 	}
 	
-	// Connect to the device
-	return pn.connectToRendezvous(rendezvous)
+	// Connect to the device with retry logic
+	return pn.connectToRendezvousWithRetry(rendezvous)
 }
 
-// connectToRendezvous connects to a device via rendezvous
-func (pn *PeerNetwork) connectToRendezvous(rendezvous *RendezvousInfo) error {
-	// Try direct connection first
-	pn.tryConnect(rendezvous.NetworkInfo)
+// connectToRendezvousWithRetry connects to a device via rendezvous with retry logic
+func (pn *PeerNetwork) connectToRendezvousWithRetry(rendezvous *RendezvousInfo) error {
+	maxRetries := 3
+	baseDelay := 2 * time.Second
 	
-	// TODO: Implement hole punching if direct connection fails
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := baseDelay * time.Duration(1<<(attempt-1))
+			time.Sleep(delay)
+		}
+		
+		// Try direct connection first
+		pn.tryConnect(rendezvous.NetworkInfo)
+		
+		// Try hole punching if direct connection fails
+		err := pn.tryHolePunchConnection(rendezvous)
+		if err == nil {
+			return nil // Success
+		}
+	}
+	
+	return fmt.Errorf("failed to connect after %d attempts", maxRetries)
+}
+
+// tryHolePunchConnection attempts hole punching connection
+func (pn *PeerNetwork) tryHolePunchConnection(rendezvous *RendezvousInfo) error {
+	// Parse network info to get IP and port
+	host, portStr, err := net.SplitHostPort(rendezvous.NetworkInfo)
+	if err != nil {
+		return fmt.Errorf("invalid network info: %v", err)
+	}
+	
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return fmt.Errorf("invalid IP address: %s", host)
+	}
+	
+	port := 0
+	if _, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+		return fmt.Errorf("invalid port: %s", portStr)
+	}
+	
+	// Attempt hole punching
+	conn, err := pn.holePuncher.PunchHole(ip, port, ip, port)
+	if err != nil {
+		return err
+	}
+	
+	// Add connection to monitoring
+	pn.monitor.AddConnection(rendezvous.DeviceID, conn)
+	
+	return nil
+}
+
+// handleReconnection handles successful reconnection events
+func (pn *PeerNetwork) handleReconnection(deviceID string, conn net.Conn) {
+	pn.mu.Lock()
+	defer pn.mu.Unlock()
+	
+	if peer, exists := pn.peers[deviceID]; exists {
+		peer.Conn = conn
+		peer.LastSeen = time.Now()
+		fmt.Printf("Reconnected to device: %s\n", deviceID)
+	}
+}
+
+// handleDisconnection handles disconnection events
+func (pn *PeerNetwork) handleDisconnection(deviceID string) {
+	pn.mu.Lock()
+	defer pn.mu.Unlock()
+	
+	if _, exists := pn.peers[deviceID]; exists {
+		delete(pn.peers, deviceID)
+		fmt.Printf("Device disconnected: %s\n", deviceID)
+	}
+}
+
+// GetNetworkStats returns comprehensive network statistics
+func (pn *PeerNetwork) GetNetworkStats() map[string]interface{} {
+	stats := map[string]interface{}{
+		"device_id":     pn.deviceID,
+		"port":          pn.port,
+		"peer_count":    len(pn.peers),
+		"bootstrap":     pn.bootstrap.GetStats(),
+		"dht":           pn.dht.GetStats(),
+		"connections":   pn.monitor.GetStats(),
+	}
+	
+	return stats
+}
+
+// Close shuts down the peer network and all services
+func (pn *PeerNetwork) Close() error {
+	pn.cancel()
+	
+	// Close all services
+	if pn.bootstrap != nil {
+		pn.bootstrap.Close()
+	}
+	
+	if pn.dht != nil {
+		pn.dht.Stop()
+	}
+	
+	if pn.monitor != nil {
+		pn.monitor.Close()
+	}
+	
+	if pn.listener != nil {
+		pn.listener.Close()
+	}
 	
 	return nil
 }

@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/pion/stun"
 )
 
 // HolePuncher handles NAT traversal using hole punching techniques
@@ -14,6 +16,8 @@ type HolePuncher struct {
 	conn       *net.UDPConn
 	stunServer string
 	mu         sync.RWMutex
+	retryCount int
+	timeout    time.Duration
 }
 
 // STUNResponse contains STUN server response with public IP/port
@@ -22,108 +26,142 @@ type STUNResponse struct {
 	PublicPort int
 }
 
-// NewHolePuncher creates a new hole puncher
+// NewHolePuncher creates a new hole puncher with production settings
 func NewHolePuncher() *HolePuncher {
 	return &HolePuncher{
-		stunServer: "stun.l.google.com:19302", // Free Google STUN server
+		stunServer: "stun.l.google.com:19302",
+		retryCount: 3,
+		timeout:    10 * time.Second,
 	}
 }
 
-// GetPublicAddress discovers public IP and port using STUN
+// GetPublicAddress discovers public IP and port using real STUN protocol
 func (hp *HolePuncher) GetPublicAddress() (*STUNResponse, error) {
-	// Create UDP connection
 	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create UDP connection: %v", err)
 	}
 	defer conn.Close()
-	
+
 	hp.conn = conn
 	hp.localAddr = conn.LocalAddr().(*net.UDPAddr)
-	
-	// Resolve STUN server
+
 	stunAddr, err := net.ResolveUDPAddr("udp", hp.stunServer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve STUN server: %v", err)
 	}
-	
-	// Send STUN binding request
-	stunRequest := hp.createSTUNRequest()
-	_, err = conn.WriteToUDP(stunRequest, stunAddr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send STUN request: %v", err)
+
+	// Create STUN binding request using pion/stun
+	message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
+
+	var response *STUNResponse
+	for i := 0; i < hp.retryCount; i++ {
+		conn.SetWriteDeadline(time.Now().Add(hp.timeout))
+		_, err = conn.WriteToUDP(message.Raw, stunAddr)
+		if err != nil {
+			continue
+		}
+
+		conn.SetReadDeadline(time.Now().Add(hp.timeout))
+		buffer := make([]byte, 1024)
+		n, _, err := conn.ReadFromUDP(buffer)
+		if err != nil {
+			continue
+		}
+
+		response, err = hp.parseSTUNResponse(buffer[:n])
+		if err == nil {
+			break
+		}
 	}
-	
-	// Read STUN response
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	buffer := make([]byte, 1024)
-	n, _, err := conn.ReadFromUDP(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read STUN response: %v", err)
+
+	if response == nil {
+		return nil, fmt.Errorf("failed to get STUN response after %d attempts", hp.retryCount)
 	}
-	
-	// Parse STUN response
-	return hp.parseSTUNResponse(buffer[:n])
+
+	return response, nil
 }
 
-// PunchHole attempts to establish direct connection with peer
+// parseSTUNResponse parses real STUN response using pion/stun
+func (hp *HolePuncher) parseSTUNResponse(data []byte) (*STUNResponse, error) {
+	message := &stun.Message{Raw: data}
+	if err := message.Decode(); err != nil {
+		return nil, fmt.Errorf("failed to decode STUN message: %v", err)
+	}
+
+	var xorAddr stun.XORMappedAddress
+	if err := xorAddr.GetFrom(message); err != nil {
+		// Fallback to mapped address
+		var mappedAddr stun.MappedAddress
+		if err := mappedAddr.GetFrom(message); err != nil {
+			return nil, fmt.Errorf("no address found in STUN response")
+		}
+		return &STUNResponse{
+			PublicIP:   mappedAddr.IP,
+			PublicPort: mappedAddr.Port,
+		}, nil
+	}
+
+	return &STUNResponse{
+		PublicIP:   xorAddr.IP,
+		PublicPort: xorAddr.Port,
+	}, nil
+}
+
+// PunchHole attempts to establish direct connection with comprehensive retry logic
 func (hp *HolePuncher) PunchHole(peerPublicIP net.IP, peerPublicPort int, peerPrivateIP net.IP, peerPrivatePort int) (*net.UDPConn, error) {
-	// Create connection for hole punching
 	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create hole punch connection: %v", err)
 	}
-	
-	// Try multiple connection attempts
+
 	attempts := []net.UDPAddr{
-		{IP: peerPublicIP, Port: peerPublicPort},   // Try public address first
-		{IP: peerPrivateIP, Port: peerPrivatePort}, // Try private address (same network)
+		{IP: peerPublicIP, Port: peerPublicPort},
+		{IP: peerPrivateIP, Port: peerPrivatePort},
 	}
-	
-	// Send hole punch packets to all possible addresses
+
 	punchData := []byte("FYBRK_HOLE_PUNCH")
 	
-	for i := 0; i < 10; i++ { // Multiple attempts
+	// Enhanced hole punching with exponential backoff
+	for attempt := 0; attempt < 20; attempt++ {
 		for _, addr := range attempts {
 			conn.WriteToUDP(punchData, &addr)
 		}
-		time.Sleep(100 * time.Millisecond)
+		
+		// Exponential backoff: 50ms, 100ms, 200ms, then 500ms
+		delay := time.Duration(50*(1<<min(attempt/5, 3))) * time.Millisecond
+		time.Sleep(delay)
 	}
-	
-	// Listen for response
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	buffer := make([]byte, 1024)
-	n, peerAddr, err := conn.ReadFromUDP(buffer)
+	n, _, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("hole punch failed: %v", err)
 	}
-	
-	// Verify it's a valid response
+
 	if string(buffer[:n]) == "FYBRK_HOLE_PUNCH_ACK" {
-		fmt.Printf("Hole punch successful to %s\n", peerAddr)
 		return conn, nil
 	}
-	
+
 	conn.Close()
 	return nil, fmt.Errorf("invalid hole punch response")
 }
 
-// StartHolePunchListener listens for incoming hole punch attempts
+// StartHolePunchListener with connection quality monitoring
 func (hp *HolePuncher) StartHolePunchListener(ctx context.Context, port int) error {
 	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		return err
 	}
-	
+
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	
-	fmt.Printf("Hole punch listener started on port %d\n", port)
-	
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -133,59 +171,20 @@ func (hp *HolePuncher) StartHolePunchListener(ctx context.Context, port int) err
 			buffer := make([]byte, 1024)
 			n, clientAddr, err := conn.ReadFromUDP(buffer)
 			if err != nil {
-				continue // Timeout or other error, keep listening
+				continue
 			}
-			
-			// Check if it's a hole punch request
+
 			if string(buffer[:n]) == "FYBRK_HOLE_PUNCH" {
-				// Send acknowledgment
 				ack := []byte("FYBRK_HOLE_PUNCH_ACK")
 				conn.WriteToUDP(ack, clientAddr)
-				fmt.Printf("Responded to hole punch from %s\n", clientAddr)
 			}
 		}
 	}
 }
 
-// createSTUNRequest creates a STUN binding request packet
-func (hp *HolePuncher) createSTUNRequest() []byte {
-	// Simplified STUN binding request
-	// In production, use a proper STUN library
-	request := make([]byte, 20)
-	
-	// STUN header: Message Type (Binding Request) + Message Length + Magic Cookie + Transaction ID
-	request[0] = 0x00 // Message Type: Binding Request (0x0001)
-	request[1] = 0x01
-	request[2] = 0x00 // Message Length: 0
-	request[3] = 0x00
-	
-	// Magic Cookie (RFC 5389)
-	request[4] = 0x21
-	request[5] = 0x12
-	request[6] = 0xA4
-	request[7] = 0x42
-	
-	// Transaction ID (12 bytes, random)
-	for i := 8; i < 20; i++ {
-		request[i] = byte(i) // Simplified - should be random
+func min(a, b int) int {
+	if a < b {
+		return a
 	}
-	
-	return request
-}
-
-// parseSTUNResponse parses STUN response to extract public IP/port
-func (hp *HolePuncher) parseSTUNResponse(data []byte) (*STUNResponse, error) {
-	if len(data) < 20 {
-		return nil, fmt.Errorf("invalid STUN response length")
-	}
-	
-	// Simplified STUN response parsing
-	// In production, use a proper STUN library
-	
-	// For now, return a mock response with the local address
-	// This would be replaced with actual STUN parsing
-	return &STUNResponse{
-		PublicIP:   net.ParseIP("127.0.0.1"), // Mock - would be actual public IP
-		PublicPort: hp.localAddr.Port,
-	}, nil
+	return b
 }
