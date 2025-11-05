@@ -140,7 +140,7 @@ func main() {
 	switch command {
 	case "sync":
 		runSync(client, syncPath)
-	case "scan":
+	case "init":
 		runScan(client, syncPath)
 	case "list":
 		runList(client)
@@ -150,7 +150,7 @@ func main() {
 }
 
 func isValidCommand(cmd string) bool {
-	validCommands := []string{"sync", "scan", "list", "pair", "pair-with"}
+	validCommands := []string{"sync", "init", "list", "pair", "pair-with"}
 	for _, valid := range validCommands {
 		if cmd == valid {
 			return true
@@ -168,7 +168,7 @@ func showUsage() {
 	fmt.Println("  fybrk <path>               # Default to sync command")
 	fmt.Println()
 	fmt.Println("COMMANDS:")
-	fmt.Println("  scan      Initialize directory for sync (first-time setup)")
+	fmt.Println("  init      Initialize directory for sync (first-time setup)")
 	fmt.Println("  sync      Start real-time synchronization (default)")
 	fmt.Println("  list      List all tracked files and their status")
 	fmt.Println("  pair      Generate QR code to pair with other devices")
@@ -176,7 +176,7 @@ func showUsage() {
 	fmt.Println()
 	fmt.Println("WORKFLOW:")
 	fmt.Println("  Device A:")
-	fmt.Println("    1. fybrk /path/to/folder scan    # Initialize folder")
+	fmt.Println("    1. fybrk /path/to/folder init    # Initialize folder")
 	fmt.Println("    2. fybrk /path/to/folder pair    # Generate QR code")
 	fmt.Println("    3. fybrk /path/to/folder sync    # Start syncing")
 	fmt.Println("  Device B:")
@@ -184,14 +184,14 @@ func showUsage() {
 	fmt.Println("    2. fybrk /local/path sync        # Start syncing")
 	fmt.Println()
 	fmt.Println("WHAT EACH COMMAND DOES:")
-	fmt.Println("  scan      - Creates .fybrk folder, generates encryption key, scans files")
+	fmt.Println("  init      - Creates .fybrk folder, generates encryption key, scans files")
 	fmt.Println("  pair      - Creates internet rendezvous point, shows QR code")
 	fmt.Println("  pair-with - Joins sync network from QR code (works over internet)")
 	fmt.Println("  sync      - Monitors for file changes and syncs with paired devices")
 	fmt.Println("  list      - Shows all files being tracked with version info")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
-	fmt.Println("  fybrk ~/Documents scan         # Set up ~/Documents for syncing")
+	fmt.Println("  fybrk ~/Documents init         # Set up ~/Documents for syncing")
 	fmt.Println("  fybrk ~/Documents              # Start syncing ~/Documents")
 	fmt.Println("  fybrk list ~/Documents         # See what's being synced")
 	fmt.Println()
@@ -199,13 +199,13 @@ func showUsage() {
 	fmt.Println("  help, -h, --help              Show this help message")
 	fmt.Println()
 	fmt.Println("FIRST TIME SETUP:")
-	fmt.Println("  Run 'scan' on a directory to initialize it for syncing.")
+	fmt.Println("  Run 'init' on a directory to initialize it for syncing.")
 	fmt.Println("  This creates a .fybrk folder with:")
 	fmt.Println("  - metadata.db (SQLite database with file info)")
 	fmt.Println("  - key (32-byte encryption key)")
 	fmt.Println()
 	fmt.Println("MULTI-DEVICE SYNC:")
-	fmt.Println("  After scanning, run 'sync' on each device.")
+	fmt.Println("  After initializing, run 'sync' on each device.")
 	fmt.Println("  Devices will automatically discover each other and sync files.")
 }
 
@@ -265,7 +265,7 @@ func runPair(client *fybrk.Client, syncPath string) {
 	// Check if directory is initialized
 	keyPath := filepath.Join(syncPath, ".fybrk", "key")
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
-		fmt.Println("Error: Directory not initialized. Run 'scan' first.")
+		fmt.Println("Error: Directory not initialized. Run 'init' first.")
 		return
 	}
 	
