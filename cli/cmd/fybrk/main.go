@@ -19,10 +19,11 @@ func main() {
 
 	var syncPath, command string
 
-	// Parse arguments - support both formats:
+	// Parse arguments - support multiple formats:
 	// fybrk /path command
-	// fybrk command /path
-	// Special case: fybrk pair-with <qr-data>
+	// fybrk command /path  
+	// fybrk command (defaults to current directory)
+	// fybrk pair-with <qr-data>
 	if len(os.Args) >= 2 && os.Args[1] == "pair-with" {
 		// Handle pair-with command specially
 		if len(os.Args) < 3 {
@@ -46,14 +47,23 @@ func main() {
 			command = arg2
 		}
 	} else if len(os.Args) == 2 {
-		// Single argument - could be help request or path with default sync
+		// Single argument - could be help request, command, or path
 		arg := os.Args[1]
 		if arg == "help" || arg == "-h" || arg == "--help" {
 			showUsage()
 			os.Exit(0)
+		} else if isValidCommand(arg) {
+			// Command without path - default to current directory
+			command = arg
+			syncPath = "."
+		} else {
+			// Path without command - default to sync
+			syncPath = arg
+			command = "sync"
 		}
-		// Default to sync command
-		syncPath = arg
+	} else if len(os.Args) == 1 {
+		// No arguments - default to current directory and sync
+		syncPath = "."
 		command = "sync"
 	} else {
 		showUsage()
@@ -63,14 +73,6 @@ func main() {
 	// Validate command
 	if !isValidCommand(command) {
 		fmt.Printf("Error: Unknown command '%s'\n\n", command)
-		showUsage()
-		os.Exit(1)
-	}
-
-	// Validate path
-	if syncPath == "" {
-		fmt.Println("Error: Path is required")
-		fmt.Println()
 		showUsage()
 		os.Exit(1)
 	}
@@ -165,9 +167,10 @@ func showUsage() {
 	fmt.Println("Fybrk - Secure Peer-to-Peer File Synchronization")
 	fmt.Println()
 	fmt.Println("USAGE:")
-	fmt.Println("  fybrk <path> [command]     # Path first, then command")
-	fmt.Println("  fybrk <command> <path>     # Command first, then path")
-	fmt.Println("  fybrk <path>               # Default to sync command")
+	fmt.Println("  fybrk [path] [command]     # Path and command (any order)")
+	fmt.Println("  fybrk [command]            # Command with current directory")
+	fmt.Println("  fybrk [path]               # Path with default sync command")
+	fmt.Println("  fybrk                      # Default: sync current directory")
 	fmt.Println()
 	fmt.Println("COMMANDS:")
 	fmt.Println("  init      Initialize directory for sync (first-time setup)")
@@ -178,12 +181,12 @@ func showUsage() {
 	fmt.Println()
 	fmt.Println("WORKFLOW:")
 	fmt.Println("  Device A:")
-	fmt.Println("    1. fybrk /path/to/folder init    # Initialize folder")
-	fmt.Println("    2. fybrk /path/to/folder pair    # Generate QR code")
-	fmt.Println("    3. fybrk /path/to/folder sync    # Start syncing")
+	fmt.Println("    1. fybrk init                    # Initialize current folder")
+	fmt.Println("    2. fybrk pair                    # Generate QR code")
+	fmt.Println("    3. fybrk sync                    # Start syncing")
 	fmt.Println("  Device B:")
 	fmt.Println("    1. fybrk pair-with '<QR-DATA>'   # Join from QR code")
-	fmt.Println("    2. fybrk /local/path sync        # Start syncing")
+	fmt.Println("    2. fybrk sync                    # Start syncing")
 	fmt.Println()
 	fmt.Println("WHAT EACH COMMAND DOES:")
 	fmt.Println("  init      - Creates .fybrk folder, generates encryption key, scans files")
@@ -193,9 +196,11 @@ func showUsage() {
 	fmt.Println("  list      - Shows all files being tracked with version info")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
-	fmt.Println("  fybrk ~/Documents init         # Set up ~/Documents for syncing")
-	fmt.Println("  fybrk ~/Documents              # Start syncing ~/Documents")
-	fmt.Println("  fybrk list ~/Documents         # See what's being synced")
+	fmt.Println("  fybrk init                     # Initialize current directory")
+	fmt.Println("  fybrk ~/Documents init         # Initialize ~/Documents")
+	fmt.Println("  fybrk                          # Sync current directory")
+	fmt.Println("  fybrk ~/Documents              # Sync ~/Documents")
+	fmt.Println("  fybrk list                     # List files in current directory")
 	fmt.Println()
 	fmt.Println("OPTIONS:")
 	fmt.Println("  help, -h, --help              Show this help message")
