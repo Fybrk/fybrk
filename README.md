@@ -56,15 +56,15 @@ make build
 
 **Device A (has files):**
 ```bash
-fybrk ~/Documents init    # Initialize folder for sync
-fybrk ~/Documents pair    # Generate QR code for pairing
-fybrk ~/Documents sync    # Start real-time sync
+fybrk init    # Initialize current directory
+fybrk pair    # Generate QR code for pairing
+fybrk sync    # Start real-time sync
 ```
 
 **Device B (wants to sync):**
 ```bash
 fybrk pair-with '<QR-CODE-DATA>'  # Join from QR code (works over internet!)
-fybrk ~/local/path sync           # Start syncing
+fybrk sync                        # Start syncing
 ```
 
 ## 📋 Commands
