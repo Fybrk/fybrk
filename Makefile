@@ -1,4 +1,4 @@
-.PHONY: test test-verbose clean deps lint fmt vet
+.PHONY: build test test-verbose clean deps lint fmt vet install
 
 # Go variables
 GOCMD=go
@@ -8,6 +8,22 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=$(GOCMD) fmt
 GOVET=$(GOCMD) vet
+
+# Build variables
+BINARY_NAME=fybrk
+BUILD_DIR=bin
+MAIN_PATH=./cli/cmd/fybrk
+
+# Build binary
+build:
+	@echo "Building $(BINARY_NAME)..."
+	@mkdir -p $(BUILD_DIR)
+	$(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+
+# Install binary
+install: build
+	@echo "Installing $(BINARY_NAME)..."
+	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
 
 # Run tests
 test:
@@ -36,6 +52,7 @@ test-pkg:
 clean:
 	@echo "Cleaning..."
 	$(GOCLEAN)
+	rm -rf $(BUILD_DIR)
 	rm -f coverage.out coverage.html
 
 # Install dependencies
@@ -72,6 +89,8 @@ dev: deps fmt vet test
 # Show help
 help:
 	@echo "Available targets:"
+	@echo "  build         - Build fybrk binary"
+	@echo "  install       - Build and install fybrk binary"
 	@echo "  test          - Run all tests"
 	@echo "  test-coverage - Run tests with coverage report"
 	@echo "  test-race     - Run tests with race detection"

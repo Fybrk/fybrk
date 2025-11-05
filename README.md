@@ -1,6 +1,6 @@
-# Fybrk Core
+# Fybrk
 
-Synchronization engine for distributed file storage.
+Secure, distributed file synchronization tool.
 
 ## Features
 
@@ -13,53 +13,41 @@ Synchronization engine for distributed file storage.
 
 ## Installation
 
+Download the latest release from GitHub or build from source:
+
 ```bash
-go get github.com/Fybrk/core
+go build -o fybrk ./cli/cmd/fybrk
 ```
 
 ## Usage
 
-```go
-import "github.com/Fybrk/core/pkg/fybrk"
+**Initialize a sync directory:**
+```bash
+fybrk -path /path/to/sync -cmd scan
+```
 
-config := &fybrk.Config{
-    SyncPath:  "/path/to/sync",
-    DBPath:    "/path/to/metadata.db",
-    DeviceID:  "device-identifier",
-    ChunkSize: 1024 * 1024,
-    Key:       encryptionKey,
-}
+**Start synchronization:**
+```bash
+fybrk -path /path/to/sync
+```
 
-client, err := fybrk.NewClient(config)
-if err != nil {
-    log.Fatal(err)
-}
-defer client.Close()
-
-// Scan for changes
-err = client.ScanDirectory()
-if err != nil {
-    log.Fatal(err)
-}
-
-// List synchronized files
-files, err := client.GetSyncedFiles()
-if err != nil {
-    log.Fatal(err)
-}
+**List synchronized files:**
+```bash
+fybrk -path /path/to/sync -cmd list
 ```
 
 ## Architecture
 
 ```
-core/
-├── internal/
+fybrk/
+├── cli/            # Command-line interface
+├── internal/       # Core synchronization engine
 │   ├── storage/    # Encryption, chunking, metadata
 │   ├── sync/       # Synchronization logic
 │   └── watcher/    # File system monitoring
-└── pkg/
-    ├── fybrk/      # Public API
-    └── types/      # Data structures
+└── pkg/           # Public API
+    ├── fybrk/     # Main API
+    └── types/     # Data structures
 ```
 
 ## Development
@@ -70,20 +58,10 @@ core/
 
 **Commands:**
 ```bash
-make test           # Run tests
-make test-coverage  # Generate coverage report
-make lint          # Code analysis
+make build         # Build binary
+make test          # Run tests
+make clean         # Clean build artifacts
 ```
-
-## Testing
-
-The library includes comprehensive tests covering:
-- File chunking and encryption
-- Metadata operations
-- File system monitoring
-- Synchronization logic
-
-Target coverage: 80%+
 
 ## Configuration
 
@@ -103,23 +81,6 @@ Fybrk stores metadata in a `.fybrk` directory:
 - Keys generated locally
 - SHA-256 integrity verification
 - No plaintext transmission
-
-## API Reference
-
-### Client
-
-- `NewClient(config)` - Initialize client
-- `ScanDirectory()` - Detect file changes
-- `GetSyncedFiles()` - List tracked files
-- `Close()` - Release resources
-
-### Configuration
-
-- `SyncPath` - Directory to synchronize
-- `DBPath` - Metadata database location
-- `DeviceID` - Unique device identifier
-- `ChunkSize` - File chunk size (bytes)
-- `Key` - 32-byte encryption key
 
 ## Contributing
 
