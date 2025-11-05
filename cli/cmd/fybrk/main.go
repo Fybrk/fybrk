@@ -67,7 +67,8 @@ func main() {
 
 	// Validate path
 	if syncPath == "" {
-		fmt.Println("Error: Path is required\n")
+		fmt.Println("Error: Path is required")
+		fmt.Println()
 		showUsage()
 		os.Exit(1)
 	}
