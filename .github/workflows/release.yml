@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.actor == 'ao'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Build binaries
+      run: |
+        # Linux AMD64
+        GOOS=linux GOARCH=amd64 go build -o fybrk-linux-amd64 ./cli/cmd/fybrk
+        
+        # Linux ARM64
+        GOOS=linux GOARCH=arm64 go build -o fybrk-linux-arm64 ./cli/cmd/fybrk
+        
+        # Linux x86 (32-bit)
+        GOOS=linux GOARCH=386 go build -o fybrk-linux-386 ./cli/cmd/fybrk
+        
+        # macOS AMD64
+        GOOS=darwin GOARCH=amd64 go build -o fybrk-darwin-amd64 ./cli/cmd/fybrk
+        
+        # macOS ARM64 (Apple Silicon)
+        GOOS=darwin GOARCH=arm64 go build -o fybrk-darwin-arm64 ./cli/cmd/fybrk
+        
+        # Windows AMD64
+        GOOS=windows GOARCH=amd64 go build -o fybrk-windows-amd64.exe ./cli/cmd/fybrk
+        
+        # Windows x86 (32-bit)
+        GOOS=windows GOARCH=386 go build -o fybrk-windows-386.exe ./cli/cmd/fybrk
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          fybrk-linux-amd64
+          fybrk-linux-arm64
+          fybrk-linux-386
+          fybrk-darwin-amd64
+          fybrk-darwin-arm64
+          fybrk-windows-amd64.exe
+          fybrk-windows-386.exe
+        generate_release_notes: true
