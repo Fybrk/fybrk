@@ -34,8 +34,6 @@ Fybrk is a secure peer-to-peer file synchronization system that enables you to s
 - **CLI Tool**: Full command-line interface for automation
 - **Plugin Architecture**: Extensible design for integrations
 
-## Get started quickly
-
 ## Installation
 
 ### Auto-detect from Pre-built Binaries
