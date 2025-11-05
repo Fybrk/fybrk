@@ -5,36 +5,36 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/Fybrk/fybrk)
 
-Fybrk is a state-of-the-art, secure peer-to-peer file synchronization system that enables you to sync files across multiple devices without relying on cloud services. Your data stays private, encrypted, and under your complete control.
+Fybrk is a secure peer-to-peer file synchronization system that enables you to sync files across multiple devices without relying on cloud services. Your data stays private, encrypted, and under your complete control.
 
-## 🚀 Features
+## Features
 
-### ✅ **Production Ready**
+### Production Ready
 - **End-to-End Encryption**: AES-256-GCM with SHA-256 integrity verification
 - **Peer-to-Peer Networking**: Direct device connections with UPnP NAT traversal
 - **Real-Time Sync**: Sub-second file change detection with fsnotify
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Zero Trust Architecture**: No servers, no accounts, no monthly fees
 
-### ✅ **Advanced Security**
+### Advanced Security
 - **Client-Side Encryption**: Files encrypted before leaving your device
 - **Secure Key Management**: 32-byte keys generated and stored locally
 - **Device Pairing**: QR code-based secure device authentication
 - **Integrity Verification**: SHA-256 checksums prevent data corruption
 
-### ✅ **High Performance**
+### High Performance
 - **Efficient Chunking**: 1MB file chunks for optimal transfer
 - **Deduplication**: Content-based hashing eliminates duplicate data
 - **Concurrent Processing**: Multi-threaded file operations
 - **Minimal Memory**: Optimized for low resource usage
 
-### ✅ **Developer Friendly**
+### Developer Friendly
 - **Comprehensive API**: Clean Go library interface
 - **Extensive Testing**: 59.1% overall coverage, 89%+ for critical components
 - **CLI Tool**: Full command-line interface for automation
 - **Plugin Architecture**: Extensible design for integrations
 
-## 📦 Installation
+## Installation
 
 ### From Source
 ```bash
@@ -48,7 +48,7 @@ make build
 go install github.com/Fybrk/fybrk/cli/cmd/fybrk@latest
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Initialize a Sync Directory
 ```bash
@@ -70,7 +70,7 @@ fybrk -path /your/sync/folder -cmd list
 2. Devices automatically discover each other on the local network
 3. Files sync instantly when changes are detected
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -94,19 +94,19 @@ fybrk -path /your/sync/folder -cmd list
 - **Pairing System**: QR code-based device authentication
 - **CLI Interface**: Command-line tool for all operations
 
-## 📊 Test Coverage
+## Test Coverage
 
 | Component | Coverage | Status |
 |-----------|----------|---------|
-| **Storage** | 89.4% | ✅ Excellent |
-| **Watcher** | 89.3% | ✅ Excellent |
-| **Pairing** | 88.1% | ✅ Excellent |
-| **Public API** | 83.3% | ✅ Good |
-| **Sync Engine** | 62.6% | ⚠️ Good |
-| **Network** | 60.1% | ⚠️ Acceptable |
-| **Overall** | 59.1% | ⚠️ Acceptable |
+| **Storage** | 89.4% | Excellent |
+| **Watcher** | 89.3% | Excellent |
+| **Pairing** | 88.1% | Excellent |
+| **Public API** | 83.3% | Good |
+| **Sync Engine** | 62.6% | Good |
+| **Network** | 60.1% | Acceptable |
+| **Overall** | 59.1% | Acceptable |
 
-## 🛠️ Development
+## Development
 
 ### Prerequisites
 - Go 1.21 or later
@@ -153,7 +153,7 @@ go test ./internal/storage
 go test ./internal/sync
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 - `FYBRK_LOG_LEVEL`: Set logging level (debug, info, warn, error)
@@ -171,7 +171,7 @@ your-sync-folder/
     └── more-files.pdf
 ```
 
-## 🔒 Security Model
+## Security Model
 
 ### Encryption
 - **Algorithm**: AES-256-GCM (Galois/Counter Mode)
@@ -191,7 +191,7 @@ your-sync-folder/
 - **No Accounts**: No registration or user accounts required
 - **Open Source**: Full transparency of security implementation
 
-## 🚀 Performance
+## Performance
 
 ### Benchmarks
 - **File Detection**: Sub-second change detection
@@ -205,7 +205,7 @@ your-sync-folder/
 - **Compression**: Optional compression for network transfer
 - **Batch Operations**: Multiple file changes batched together
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
@@ -224,17 +224,17 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Code Style**: Follow Go conventions and use `gofmt`
 - **Security**: Security-related changes require extra review
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [fsnotify](https://github.com/fsnotify/fsnotify) for file system monitoring
 - [testify](https://github.com/stretchr/testify) for testing framework
 - Go standard library for cryptographic primitives
 
-## 📞 Support
+## Support
 
 - **Documentation**: [docs.fybrk.com](https://docs.fybrk.com)
 - **Issues**: [GitHub Issues](https://github.com/Fybrk/fybrk/issues)
@@ -242,4 +242,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Fybrk: Your files, everywhere, private by design.** 🔒
+**Fybrk: Your files, everywhere, private by design.**
