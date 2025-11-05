@@ -57,23 +57,33 @@ go install github.com/Fybrk/fybrk/cli/cmd/fybrk@latest
 
 ### 1. Initialize a Sync Directory
 ```bash
-fybrk -path /your/sync/folder -cmd scan
+fybrk /your/sync/folder scan
 ```
 
 ### 2. Start Synchronization
 ```bash
-fybrk -path /your/sync/folder -cmd sync
+fybrk /your/sync/folder sync
+# or simply
+fybrk /your/sync/folder
 ```
 
 ### 3. List Synced Files
 ```bash
-fybrk -path /your/sync/folder -cmd list
+fybrk /your/sync/folder list
 ```
 
 ### 4. Multi-Device Setup
-1. Run `fybrk -cmd sync` on each device
+1. Run `fybrk /your/folder sync` on each device
 2. Devices automatically discover each other on the local network
 3. Files sync instantly when changes are detected
+
+### Alternative Command Format
+You can also use command-first format:
+```bash
+fybrk scan /your/sync/folder
+fybrk sync /your/sync/folder  
+fybrk list /your/sync/folder
+```
 
 ## Architecture
 

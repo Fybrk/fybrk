@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,31 +10,82 @@ import (
 )
 
 func main() {
-	var (
-		syncPath = flag.String("path", "", "Path to sync directory")
-		dbPath   = flag.String("db", "", "Path to metadata database")
-		command  = flag.String("cmd", "sync", "Command to run: sync, scan, list")
-	)
-	flag.Parse()
-
-	if *syncPath == "" {
-		fmt.Println("Error: -path is required")
-		flag.Usage()
+	if len(os.Args) < 2 {
+		showUsage()
 		os.Exit(1)
 	}
 
-	if *dbPath == "" {
-		*dbPath = filepath.Join(*syncPath, ".fybrk", "metadata.db")
+	var syncPath, command string
+
+	// Parse arguments - support both formats:
+	// fybrk /path command
+	// fybrk command /path
+	if len(os.Args) == 3 {
+		arg1, arg2 := os.Args[1], os.Args[2]
+		
+		// Check if first arg is a command
+		if isValidCommand(arg1) {
+			command = arg1
+			syncPath = arg2
+		} else {
+			// Assume first arg is path, second is command
+			syncPath = arg1
+			command = arg2
+		}
+	} else if len(os.Args) == 2 {
+		// Single argument - could be help request or path with default sync
+		arg := os.Args[1]
+		if arg == "help" || arg == "-h" || arg == "--help" {
+			showUsage()
+			os.Exit(0)
+		}
+		// Default to sync command
+		syncPath = arg
+		command = "sync"
+	} else {
+		showUsage()
+		os.Exit(1)
 	}
 
+	// Validate command
+	if !isValidCommand(command) {
+		fmt.Printf("Error: Unknown command '%s'\n\n", command)
+		showUsage()
+		os.Exit(1)
+	}
+
+	// Validate path
+	if syncPath == "" {
+		fmt.Println("Error: Path is required\n")
+		showUsage()
+		os.Exit(1)
+	}
+
+	// Convert to absolute path
+	absPath, err := filepath.Abs(syncPath)
+	if err != nil {
+		fmt.Printf("Error: Invalid path '%s': %v\n", syncPath, err)
+		os.Exit(1)
+	}
+	syncPath = absPath
+
+	// Check if path exists
+	if _, err := os.Stat(syncPath); os.IsNotExist(err) {
+		fmt.Printf("Error: Path '%s' does not exist\n", syncPath)
+		os.Exit(1)
+	}
+
+	// Setup database path
+	dbPath := filepath.Join(syncPath, ".fybrk", "metadata.db")
+
 	// Ensure .fybrk directory exists
-	fybrDir := filepath.Dir(*dbPath)
+	fybrDir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(fybrDir, 0755); err != nil {
 		fmt.Printf("Error creating .fybrk directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Generate or load encryption key (simplified for MVP)
+	// Generate or load encryption key
 	key := make([]byte, 32)
 	keyPath := filepath.Join(fybrDir, "key")
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
@@ -60,10 +110,10 @@ func main() {
 
 	// Create Fybrk client
 	config := &fybrk.Config{
-		SyncPath:  *syncPath,
-		DBPath:    *dbPath,
-		DeviceID:  "local-device", // Simplified for MVP
-		ChunkSize: 1024 * 1024,    // 1MB chunks
+		SyncPath:  syncPath,
+		DBPath:    dbPath,
+		DeviceID:  "local-device",
+		ChunkSize: 1024 * 1024, // 1MB chunks
 		Key:       key,
 	}
 
@@ -74,18 +124,52 @@ func main() {
 	}
 	defer client.Close()
 
-	switch *command {
+	// Execute command
+	switch command {
 	case "sync":
-		runSync(client, *syncPath)
+		runSync(client, syncPath)
 	case "scan":
-		runScan(client, *syncPath)
+		runScan(client, syncPath)
 	case "list":
 		runList(client)
-	default:
-		fmt.Printf("Unknown command: %s\n", *command)
-		flag.Usage()
-		os.Exit(1)
 	}
+}
+
+func isValidCommand(cmd string) bool {
+	validCommands := []string{"sync", "scan", "list"}
+	for _, valid := range validCommands {
+		if cmd == valid {
+			return true
+		}
+	}
+	return false
+}
+
+func showUsage() {
+	fmt.Println("Fybrk - Secure Peer-to-Peer File Synchronization")
+	fmt.Println()
+	fmt.Println("USAGE:")
+	fmt.Println("  fybrk <path> [command]     # Path first, then command")
+	fmt.Println("  fybrk <command> <path>     # Command first, then path")
+	fmt.Println("  fybrk <path>               # Default to sync command")
+	fmt.Println()
+	fmt.Println("COMMANDS:")
+	fmt.Println("  sync    Start real-time synchronization (default)")
+	fmt.Println("  scan    Scan directory and update metadata")
+	fmt.Println("  list    List all tracked files")
+	fmt.Println()
+	fmt.Println("EXAMPLES:")
+	fmt.Println("  fybrk ~/Documents sync     # Start syncing ~/Documents")
+	fmt.Println("  fybrk scan ~/Documents     # Scan ~/Documents for changes")
+	fmt.Println("  fybrk ~/Documents          # Start syncing (default command)")
+	fmt.Println("  fybrk list ~/Documents     # List files in ~/Documents")
+	fmt.Println()
+	fmt.Println("OPTIONS:")
+	fmt.Println("  help, -h, --help          Show this help message")
+	fmt.Println()
+	fmt.Println("The sync directory will contain a .fybrk folder with:")
+	fmt.Println("  - metadata.db (SQLite database)")
+	fmt.Println("  - key (32-byte encryption key)")
 }
 
 func runSync(client *fybrk.Client, syncPath string) {
