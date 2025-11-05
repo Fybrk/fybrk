@@ -18,11 +18,13 @@ MAIN_PATH=./cli/cmd/fybrk
 build:
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	$(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	CGO_ENABLED=1 $(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 
 # Install binary
-install: build
+install: 
 	@echo "Installing $(BINARY_NAME)..."
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=1 $(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
 	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
 
 # Run tests
