@@ -3,9 +3,11 @@ package network
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,15 +15,17 @@ import (
 )
 
 type PeerNetwork struct {
-	deviceID   string
-	port       int
-	peers      map[string]*Peer
-	listener   net.Listener
-	ctx        context.Context
-	cancel     context.CancelFunc
-	mu         sync.RWMutex
-	onMessage  func(deviceID string, msg *Message)
-	upnp       *UPnPClient // UPnP client for NAT traversal
+	deviceID    string
+	port        int
+	peers       map[string]*Peer
+	listener    net.Listener
+	ctx         context.Context
+	cancel      context.CancelFunc
+	mu          sync.RWMutex
+	onMessage   func(deviceID string, msg *Message)
+	upnp        *UPnPClient // UPnP client for NAT traversal
+	bootstrap   *BootstrapService // Bootstrap service for internet discovery
+	holePuncher *HolePuncher // Hole puncher for NAT traversal
 }
 
 type Peer struct {
@@ -52,11 +56,13 @@ func NewPeerNetwork(deviceID string, port int) *PeerNetwork {
 	ctx, cancel := context.WithCancel(context.Background())
 	
 	return &PeerNetwork{
-		deviceID: deviceID,
-		port:     port,
-		peers:    make(map[string]*Peer),
-		ctx:      ctx,
-		cancel:   cancel,
+		deviceID:    deviceID,
+		port:        port,
+		peers:       make(map[string]*Peer),
+		ctx:         ctx,
+		cancel:      cancel,
+		bootstrap:   NewBootstrapService(),
+		holePuncher: NewHolePuncher(),
 	}
 }
 
@@ -156,9 +162,35 @@ func (pn *PeerNetwork) discoverPeers() {
 		case <-pn.ctx.Done():
 			return
 		case <-ticker.C:
+			// Try local network discovery first
 			pn.broadcastDiscovery()
+			
+			// Try internet discovery via bootstrap
+			pn.discoverInternetPeers()
 		}
 	}
+}
+
+func (pn *PeerNetwork) discoverInternetPeers() {
+	// Discover peers via bootstrap network
+	peers, err := pn.bootstrap.DiscoverPeers(pn.deviceID)
+	if err != nil {
+		return // Silently fail - local discovery might still work
+	}
+	
+	// Try to connect to discovered peers
+	for _, peerAddr := range peers {
+		go pn.tryConnectWithHolePunch(peerAddr)
+	}
+}
+
+func (pn *PeerNetwork) tryConnectWithHolePunch(addr string) {
+	// First try direct connection
+	pn.tryConnect(addr)
+	
+	// If direct connection fails, try hole punching
+	// This would parse the address and attempt hole punching
+	// Implementation simplified for now
 }
 
 func (pn *PeerNetwork) broadcastDiscovery() {
@@ -243,6 +275,89 @@ func (pn *PeerNetwork) GetPeers() []string {
 
 func (pn *PeerNetwork) SetMessageHandler(handler func(deviceID string, msg *Message)) {
 	pn.onMessage = handler
+}
+
+// CreatePairingQR creates a QR code for internet-wide device pairing
+func (pn *PeerNetwork) CreatePairingQR(syncPath, encryptionKey string) (string, error) {
+	// Get public address via STUN
+	stunResp, err := pn.holePuncher.GetPublicAddress()
+	if err != nil {
+		return "", fmt.Errorf("failed to get public address: %v", err)
+	}
+	
+	// Create rendezvous point
+	networkInfo := fmt.Sprintf("%s:%d", stunResp.PublicIP, stunResp.PublicPort)
+	rendezvous, err := pn.bootstrap.CreateRendezvous(pn.deviceID, "temp-public-key", networkInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to create rendezvous: %v", err)
+	}
+	
+	// Create pairing data
+	pairingData := map[string]interface{}{
+		"version":       1,
+		"rendezvous_id": rendezvous.ID,
+		"device_id":     pn.deviceID,
+		"sync_path":     syncPath,
+		"encryption_key": encryptionKey,
+		"expires_at":    rendezvous.ExpiresAt.Unix(),
+	}
+	
+	// Convert to JSON
+	jsonData, err := json.Marshal(pairingData)
+	if err != nil {
+		return "", err
+	}
+	
+	// Create fybrk:// URL
+	qrData := fmt.Sprintf("fybrk://pair?data=%s", base64.URLEncoding.EncodeToString(jsonData))
+	
+	return qrData, nil
+}
+
+// JoinFromQR joins a sync network from QR code data
+func (pn *PeerNetwork) JoinFromQR(qrData string) error {
+	// Parse fybrk:// URL
+	if !strings.HasPrefix(qrData, "fybrk://pair?data=") {
+		return fmt.Errorf("invalid QR code format")
+	}
+	
+	// Extract and decode data
+	encodedData := strings.TrimPrefix(qrData, "fybrk://pair?data=")
+	jsonData, err := base64.URLEncoding.DecodeString(encodedData)
+	if err != nil {
+		return fmt.Errorf("failed to decode QR data: %v", err)
+	}
+	
+	// Parse pairing data
+	var pairingData map[string]interface{}
+	if err := json.Unmarshal(jsonData, &pairingData); err != nil {
+		return fmt.Errorf("failed to parse pairing data: %v", err)
+	}
+	
+	// Extract rendezvous ID
+	rendezvousID, ok := pairingData["rendezvous_id"].(string)
+	if !ok {
+		return fmt.Errorf("missing rendezvous ID in QR data")
+	}
+	
+	// Look up rendezvous
+	rendezvous, err := pn.bootstrap.FindRendezvous(rendezvousID)
+	if err != nil {
+		return fmt.Errorf("failed to find rendezvous: %v", err)
+	}
+	
+	// Connect to the device
+	return pn.connectToRendezvous(rendezvous)
+}
+
+// connectToRendezvous connects to a device via rendezvous
+func (pn *PeerNetwork) connectToRendezvous(rendezvous *RendezvousInfo) error {
+	// Try direct connection first
+	pn.tryConnect(rendezvous.NetworkInfo)
+	
+	// TODO: Implement hole punching if direct connection fails
+	
+	return nil
 }
 
 func GenerateDeviceID() string {
