@@ -132,11 +132,13 @@ func main() {
 		runScan(client, syncPath)
 	case "list":
 		runList(client)
+	case "pair":
+		runPair(client, syncPath)
 	}
 }
 
 func isValidCommand(cmd string) bool {
-	validCommands := []string{"sync", "scan", "list"}
+	validCommands := []string{"sync", "scan", "list", "pair"}
 	for _, valid := range validCommands {
 		if cmd == valid {
 			return true
@@ -157,15 +159,18 @@ func showUsage() {
 	fmt.Println("  scan    Initialize directory for sync (first-time setup)")
 	fmt.Println("  sync    Start real-time synchronization (default)")
 	fmt.Println("  list    List all tracked files and their status")
+	fmt.Println("  pair    Generate QR code to pair with other devices")
 	fmt.Println()
 	fmt.Println("WORKFLOW:")
 	fmt.Println("  1. fybrk /path/to/folder scan    # First time: scan and encrypt files")
-	fmt.Println("  2. fybrk /path/to/folder sync    # Start syncing with other devices")
-	fmt.Println("  3. fybrk /path/to/folder list    # Check what files are tracked")
+	fmt.Println("  2. fybrk /path/to/folder pair    # Generate QR code for other devices")
+	fmt.Println("  3. fybrk /path/to/folder sync    # Start syncing with paired devices")
+	fmt.Println("  4. fybrk /path/to/folder list    # Check what files are tracked")
 	fmt.Println()
 	fmt.Println("WHAT EACH COMMAND DOES:")
 	fmt.Println("  scan - Creates .fybrk folder, generates encryption key, scans all files")
-	fmt.Println("  sync - Monitors for file changes and syncs with other devices")
+	fmt.Println("  pair - Shows QR code for other devices to scan and join sync")
+	fmt.Println("  sync - Monitors for file changes and syncs with paired devices")
 	fmt.Println("  list - Shows all files being tracked with version info")
 	fmt.Println()
 	fmt.Println("EXAMPLES:")
@@ -234,4 +239,30 @@ func runList(client *fybrk.Client) {
 		fmt.Printf("  %s (v%d, %d bytes, %d chunks)\n", 
 			file.Path, file.Version, file.Size, len(file.Chunks))
 	}
+}
+
+func runPair(client *fybrk.Client, syncPath string) {
+	fmt.Printf("Generating pairing QR code for: %s\n", syncPath)
+	fmt.Println()
+	fmt.Println("PAIRING INSTRUCTIONS:")
+	fmt.Println("1. On the other device, install Fybrk")
+	fmt.Println("2. Run: fybrk scan <QR-CODE-DATA>")
+	fmt.Println("3. The device will automatically sync with this folder")
+	fmt.Println()
+	fmt.Println("QR CODE DATA (scan this with the other device):")
+	
+	// For now, show the sync path and key info
+	// TODO: Implement proper QR code generation with pairing data
+	keyPath := filepath.Join(syncPath, ".fybrk", "key")
+	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+		fmt.Println("Error: Directory not initialized. Run 'scan' first.")
+		return
+	}
+	
+	// Simple pairing data for now - in production this would be more secure
+	pairingData := fmt.Sprintf("fybrk://pair?path=%s", syncPath)
+	fmt.Println(pairingData)
+	fmt.Println()
+	fmt.Println("NOTE: This is a simplified implementation.")
+	fmt.Println("Full QR code pairing with internet connectivity coming soon!")
 }
