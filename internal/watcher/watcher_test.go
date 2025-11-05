@@ -178,6 +178,19 @@ func TestDirectoryCreation(t *testing.T) {
 	assert.True(t, watched)
 }
 
+func TestErrors(t *testing.T) {
+	watcher, err := NewFileWatcher()
+	if err != nil {
+		t.Fatalf("Failed to create file watcher: %v", err)
+	}
+	defer watcher.Close()
+	
+	errors := watcher.Errors()
+	if errors == nil {
+		t.Error("Expected errors channel to be available")
+	}
+}
+
 func TestClose(t *testing.T) {
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
