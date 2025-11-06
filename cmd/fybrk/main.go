@@ -6,12 +6,19 @@ import (
 	"path/filepath"
 
 	"github.com/Fybrk/fybrk/pkg/core"
+	"github.com/Fybrk/fybrk/internal/config"
 )
 
 // Version is set at build time via ldflags
 var Version = "dev"
 
 func main() {
+	// Initialize config on first run
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("Warning: Could not load config: %v\n", err)
+	}
+	
 	// Parse arguments with simple logic
 	var target string
 
@@ -36,6 +43,12 @@ func main() {
 		// Handle version request
 		if target == "version" || target == "--version" || target == "-v" {
 			fmt.Printf("fybrk version %s\n", Version)
+			return
+		}
+
+		// Handle config request
+		if target == "config" || target == "--config" {
+			showConfig(cfg)
 			return
 		}
 	} else {
@@ -154,6 +167,7 @@ func showUsage() {
 	fmt.Println("  fybrk /path/to/folder          # Start sync in specific directory")
 	fmt.Println("  fybrk fybrk://pair?data=...    # Join existing sync")
 	fmt.Println("  fybrk pair                     # Get pair URL for current directory")
+	fmt.Println("  fybrk config                   # Show current configuration")
 	fmt.Println("  fybrk version                  # Show version")
 	fmt.Println("  fybrk help                     # Show this help")
 	fmt.Println()
@@ -189,10 +203,25 @@ func showUsage() {
 	fmt.Println("  - Automatic conflict resolution")
 	fmt.Println("  - Zero configuration required")
 	fmt.Println("  - Cross-platform (Windows, macOS, Linux)")
-	fmt.Println("  - No cloud servers - direct device-to-device")
+	fmt.Println("  - No cloud servers - direct device-to-device + relay fallback")
 	fmt.Println()
 	fmt.Println("TROUBLESHOOTING:")
 	fmt.Println("  - Files not syncing? Check both devices are running fybrk")
-	fmt.Println("  - Connection issues? Ensure devices are on same network")
+	fmt.Println("  - Connection issues? Relay servers provide internet fallback")
+	fmt.Println("  - Custom relay? Edit ~/.fybrk/config.json")
 	fmt.Println("  - Need help? Visit https://github.com/Fybrk/fybrk/issues")
+}
+
+func showConfig(cfg *config.Config) {
+	configDir, _ := config.GetConfigDir()
+	fmt.Printf("Fybrk Configuration\n")
+	fmt.Printf("===================\n")
+	fmt.Printf("Config file: %s/config.json\n", configDir)
+	fmt.Printf("Device ID: %s\n", cfg.DeviceID)
+	fmt.Printf("Relay enabled: %t\n", cfg.EnableRelay)
+	fmt.Printf("Relay servers:\n")
+	for _, server := range cfg.RelayServers {
+		fmt.Printf("  - %s\n", server)
+	}
+	fmt.Printf("\nTo customize, edit the config file and restart fybrk.\n")
 }
