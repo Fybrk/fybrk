@@ -93,7 +93,7 @@ func TestRemovePath(t *testing.T) {
 
 func TestFileEvents(t *testing.T) {
 	t.Skip("Skipping flaky cross-platform test - using pkg/core watcher instead")
-	
+
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 

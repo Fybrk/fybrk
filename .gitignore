@@ -49,3 +49,5 @@ test*.db
 # Temporary files
 tmp/
 temp/
+
+fybrk

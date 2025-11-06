@@ -1,0 +1,55 @@
+# github.com/Fybrk/fybrk/pkg/core [github.com/Fybrk/fybrk/pkg/core.test]
+pkg/core/network_test.go:18:16: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/network_test.go:38:16: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/network_test.go:60:16: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/network_test.go:79:16: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/network_test.go:102:16: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/sync_test.go:21:8: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/sync_test.go:38:8: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/sync_test.go:56:8: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/sync_test.go:58:6: no new variables on left side of :=
+pkg/core/sync_test.go:80:8: assignment mismatch: 1 variable but NewSyncEngine returns 2 values
+pkg/core/sync_test.go:80:8: too many errors
+# github.com/Fybrk/fybrk/internal/network [github.com/Fybrk/fybrk/internal/network.test]
+internal/network/dht_test.go:38:28: not enough arguments in call to dht.AnnounceDevice
+	have (string)
+	want (string, int)
+internal/network/dht_test.go:46:11: not enough arguments in call to dht.FindPeers
+	have ()
+	want (string)
+internal/network/dht_test.go:46:11: assignment mismatch: 1 variable but dht.FindPeers returns 2 values
+internal/network/dht_test.go:53:15: assignment mismatch: 2 variables but dht.CreateRendezvous returns 1 value
+internal/network/dht_test.go:53:58: cannot use 5 * time.Minute (constant 300000000000 of int64 type time.Duration) as map[string]interface{} value in argument to dht.CreateRendezvous
+internal/network/holepunch_test.go:13:24: hp.stunServers undefined (type *HolePuncher has no field or method stunServers)
+internal/network/holepunch_test.go:33:9: assignment mismatch: 1 variable but hp.PunchHole returns 2 values
+internal/network/holepunch_test.go:33:41: not enough arguments in call to hp.PunchHole
+	have (string, number)
+	want (net.IP, int, net.IP, int)
+internal/network/holepunch_test.go:41:35: not enough arguments in call to hp.StartHolePunchListener
+	have (number)
+	want (context.Context, int)
+internal/network/monitor_test.go:37:10: assignment mismatch: 1 variable but monitor.GetConnectionInfo returns 2 values
+internal/network/monitor_test.go:37:10: too many errors
+=== RUN   TestFullSyncIntegration
+Error processing file /var/folders/ts/qycrvh4d5jdb_4pm9kdj_0yr0000gq/T/device13100802511/sync/test.txt: database is locked (5) (SQLITE_BUSY)
+    integration_test.go:69: 
+        	Error Trace:	/Users/aoaws/src/ao/fybrk/fybrk/integration_test.go:69
+        	Error:      	Received unexpected error:
+        	            	database is locked (5) (SQLITE_BUSY)
+        	Test:       	TestFullSyncIntegration
+--- FAIL: TestFullSyncIntegration (0.03s)
+=== RUN   TestFileVersioningIntegration
+Error processing file /var/folders/ts/qycrvh4d5jdb_4pm9kdj_0yr0000gq/T/versioning_test1727030495/sync/version_test.txt: database is locked (5) (SQLITE_BUSY)
+    integration_test.go:153: 
+        	Error Trace:	/Users/aoaws/src/ao/fybrk/fybrk/integration_test.go:153
+        	Error:      	Received unexpected error:
+        	            	database is locked (5) (SQLITE_BUSY)
+        	Test:       	TestFileVersioningIntegration
+--- FAIL: TestFileVersioningIntegration (0.03s)
+=== RUN   TestEncryptionIntegration
+Error processing file /var/folders/ts/qycrvh4d5jdb_4pm9kdj_0yr0000gq/T/encryption_test2945832097/sync/sensitive.txt: database is locked (5) (SQLITE_BUSY)
+--- PASS: TestEncryptionIntegration (0.02s)
+FAIL
+coverage: [no statements]
+FAIL	github.com/Fybrk/fybrk	1.702s
+	github.com/Fybrk/fybrk/cli/cmd/fybrk		coverage: 0.0% of statements
