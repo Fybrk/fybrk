@@ -161,10 +161,15 @@ func (e *Engine) processFile(filePath, relPath string) error {
 		chunkHashes[i] = chunk.Hash
 	}
 
-	// Get version number
+	// Get version number - only increment if content actually changed
 	version := int64(1)
 	if existingMetadata, err := e.metadataStore.GetFileMetadata(relPath); err == nil {
-		version = existingMetadata.Version + 1
+		// Only increment version if hash changed (content changed)
+		if existingMetadata.Hash != fileHash {
+			version = existingMetadata.Version + 1
+		} else {
+			version = existingMetadata.Version // Keep same version if no content change
+		}
 	}
 
 	// Create metadata
