@@ -9,9 +9,12 @@ BUILD_DIR=bin
 CMD_DIR=cmd/fybrk
 PKG_DIR=pkg/core
 
+# Version from git tag or commit
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+
 # Go configuration
 GO=go
-GOFLAGS=-ldflags="-s -w"
+GOFLAGS=-ldflags="-s -w -X main.Version=$(VERSION)"
 COVERAGE_FILE=coverage.out
 
 all: fmt vet test build

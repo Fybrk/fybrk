@@ -8,6 +8,9 @@ import (
 	"github.com/Fybrk/fybrk/pkg/core"
 )
 
+// Version is set at build time via ldflags
+var Version = "dev"
+
 func main() {
 	// Parse arguments with simple logic
 	var target string
@@ -27,6 +30,12 @@ func main() {
 		// Handle pair URL request
 		if target == "pair" || target == "--pair" {
 			showPairURL(".")
+			return
+		}
+
+		// Handle version request
+		if target == "version" || target == "--version" || target == "-v" {
+			fmt.Printf("fybrk version %s\n", Version)
 			return
 		}
 	} else {
@@ -145,6 +154,7 @@ func showUsage() {
 	fmt.Println("  fybrk /path/to/folder          # Start sync in specific directory")
 	fmt.Println("  fybrk fybrk://pair?data=...    # Join existing sync")
 	fmt.Println("  fybrk pair                     # Get pair URL for current directory")
+	fmt.Println("  fybrk version                  # Show version")
 	fmt.Println("  fybrk help                     # Show this help")
 	fmt.Println()
 	fmt.Println("QUICK START - SYNC BETWEEN 2 DEVICES:")
@@ -163,6 +173,7 @@ func showUsage() {
 	fmt.Println("  fybrk ~/Documents              # Sync Documents folder")
 	fmt.Println("  fybrk ~/Photos                 # Sync Photos folder")
 	fmt.Println("  fybrk pair                     # Get pair URL for current directory")
+	fmt.Println("  fybrk version                  # Show version info")
 	fmt.Println("  fybrk 'fybrk://pair?key=abc'   # Join from pair URL")
 	fmt.Println()
 	fmt.Println("WHAT HAPPENS WHEN YOU RUN FYBRK:")

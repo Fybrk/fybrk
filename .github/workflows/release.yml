@@ -23,26 +23,29 @@ jobs:
     
     - name: Build binaries
       run: |
+        # Get version from tag
+        VERSION=${GITHUB_REF#refs/tags/}
+        
         # Linux AMD64
-        GOOS=linux GOARCH=amd64 go build -o fybrk-linux-amd64 ./cmd/fybrk
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-linux-amd64 ./cmd/fybrk
         
         # Linux ARM64
-        GOOS=linux GOARCH=arm64 go build -o fybrk-linux-arm64 ./cmd/fybrk
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-linux-arm64 ./cmd/fybrk
         
         # Linux x86 (32-bit)
-        GOOS=linux GOARCH=386 go build -o fybrk-linux-386 ./cmd/fybrk
+        GOOS=linux GOARCH=386 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-linux-386 ./cmd/fybrk
         
         # macOS AMD64
-        GOOS=darwin GOARCH=amd64 go build -o fybrk-darwin-amd64 ./cmd/fybrk
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-darwin-amd64 ./cmd/fybrk
         
         # macOS ARM64 (Apple Silicon)
-        GOOS=darwin GOARCH=arm64 go build -o fybrk-darwin-arm64 ./cmd/fybrk
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-darwin-arm64 ./cmd/fybrk
         
         # Windows AMD64
-        GOOS=windows GOARCH=amd64 go build -o fybrk-windows-amd64.exe ./cmd/fybrk
+        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-windows-amd64.exe ./cmd/fybrk
         
         # Windows x86 (32-bit)
-        GOOS=windows GOARCH=386 go build -o fybrk-windows-386.exe ./cmd/fybrk
+        GOOS=windows GOARCH=386 go build -ldflags="-s -w -X main.Version=$VERSION" -o fybrk-windows-386.exe ./cmd/fybrk
     
     - name: Run Tests
       run: |

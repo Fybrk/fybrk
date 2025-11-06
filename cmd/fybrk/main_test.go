@@ -28,6 +28,7 @@ func TestShowUsage_Output(t *testing.T) {
 	expectedSections := []string{
 		"Fybrk - Your files, everywhere, private by design",
 		"USAGE:",
+		"fybrk version",
 		"QUICK START - SYNC BETWEEN 2 DEVICES:",
 		"EXAMPLES:",
 		"WHAT HAPPENS WHEN YOU RUN FYBRK:",
