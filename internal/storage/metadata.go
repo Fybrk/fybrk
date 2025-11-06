@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/Fybrk/fybrk/pkg/types"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 type MetadataStore struct {
