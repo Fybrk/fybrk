@@ -19,8 +19,13 @@ fybrk 'fybrk://pair?key=...'
 ## Quick Start
 
 ```bash
+# Install Fybrk if you don't already have it locally
+curl -sSL https://fybrk.com/install.sh | bash
+```
+
+```bash
 # Start syncing current directory
-fybrk .
+fybrk
 
 # Output:
 # Starting Fybrk sync in: /path/to/folder
@@ -57,6 +62,7 @@ Device A                    Device B
 ```
 
 **Every file operation syncs both ways:**
+
 - Create a file → appears on other devices
 - Modify a file → changes sync to other devices  
 - Delete a file → removed from other devices
@@ -83,12 +89,14 @@ Peer connected: peer_1762342903625
 ## Architecture
 
 ### Core Components
+
 - **File Watcher**: Detects changes using fsnotify
 - **Sync Engine**: Processes events and manages peers
 - **WebSocket Server**: Handles P2P connections
 - **SQLite Database**: Tracks file metadata and hashes
 
 ### Sync Protocol
+
 ```json
 {
   "type": "file_create",
@@ -103,17 +111,18 @@ Peer connected: peer_1762342903625
 
 ```
 your-folder/
-├── document.txt      # Your files (synced)
-├── image.jpg         # Your files (synced)
-└── .fybrk/          # Fybrk metadata (hidden)
-    ├── key          # Encryption key (32 bytes)
-    ├── metadata.db  # File tracking database
-    └── metadata.db-wal # SQLite WAL file
+├── document.txt          # Your files (synced)
+├── image.jpg             # Your files (synced)
+└── .fybrk/               # Fybrk metadata (hidden)
+    ├── key               # Encryption key (32 bytes)
+    ├── metadata.db       # File tracking database
+    └── metadata.db-wal   # SQLite WAL file
 ```
 
 ## Testing
 
 Run comprehensive tests:
+
 ```bash
 ./comprehensive_test.sh
 
@@ -130,6 +139,7 @@ Run comprehensive tests:
 ## Installation
 
 ### From Source
+
 ```bash
 git clone https://github.com/Fybrk/fybrk
 cd fybrk/fybrk
@@ -137,6 +147,7 @@ go build -o bin/fybrk cmd/fybrk/main.go
 ```
 
 ### Usage
+
 ```bash
 fybrk                          # Sync current directory
 fybrk /path/to/folder          # Sync specific directory  
@@ -154,17 +165,20 @@ fybrk help                     # Show help
 ## Development
 
 ### Build
+
 ```bash
 make build
 ```
 
 ### Test  
+
 ```bash
 make test
 ./comprehensive_test.sh
 ```
 
 ### Coverage
+
 ```bash
 make coverage
 ```
