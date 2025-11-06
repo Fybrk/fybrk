@@ -50,7 +50,7 @@ func (e *Engine) EnableMultiDeviceSync(port int) error {
 	if err != nil {
 		return err
 	}
-	
+
 	e.multiDevice = mds
 	return mds.Start()
 }

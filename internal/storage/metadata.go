@@ -78,13 +78,13 @@ func (m *MetadataStore) StoreFileMetadata(metadata *types.FileMetadata) error {
 
 func (m *MetadataStore) GetFileMetadata(path string) (*types.FileMetadata, error) {
 	query := `SELECT path, hash, size, mod_time, chunks, version FROM files WHERE path = ?`
-	
+
 	row := m.db.QueryRow(query, path)
-	
+
 	var metadata types.FileMetadata
 	var hashBytes []byte
 	var chunksJSON string
-	
+
 	err := row.Scan(
 		&metadata.Path,
 		&hashBytes,
@@ -93,13 +93,13 @@ func (m *MetadataStore) GetFileMetadata(path string) (*types.FileMetadata, error
 		&chunksJSON,
 		&metadata.Version,
 	)
-	
+
 	if err != nil {
 		return nil, err
 	}
 
 	copy(metadata.Hash[:], hashBytes)
-	
+
 	if err := json.Unmarshal([]byte(chunksJSON), &metadata.Chunks); err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (m *MetadataStore) GetFileMetadata(path string) (*types.FileMetadata, error
 
 func (m *MetadataStore) ListFiles() ([]*types.FileMetadata, error) {
 	query := `SELECT path, hash, size, mod_time, chunks, version FROM files ORDER BY path`
-	
+
 	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -117,12 +117,12 @@ func (m *MetadataStore) ListFiles() ([]*types.FileMetadata, error) {
 	defer rows.Close()
 
 	var files []*types.FileMetadata
-	
+
 	for rows.Next() {
 		var metadata types.FileMetadata
 		var hashBytes []byte
 		var chunksJSON string
-		
+
 		err := rows.Scan(
 			&metadata.Path,
 			&hashBytes,
@@ -131,13 +131,13 @@ func (m *MetadataStore) ListFiles() ([]*types.FileMetadata, error) {
 			&chunksJSON,
 			&metadata.Version,
 		)
-		
+
 		if err != nil {
 			return nil, err
 		}
 
 		copy(metadata.Hash[:], hashBytes)
-		
+
 		if err := json.Unmarshal([]byte(chunksJSON), &metadata.Chunks); err != nil {
 			return nil, err
 		}
@@ -172,12 +172,12 @@ func (m *MetadataStore) StoreDevice(device *types.Device) error {
 
 func (m *MetadataStore) GetDevice(id string) (*types.Device, error) {
 	query := `SELECT id, name, profile, last_seen FROM devices WHERE id = ?`
-	
+
 	row := m.db.QueryRow(query, id)
-	
+
 	var device types.Device
 	var profile int
-	
+
 	err := row.Scan(&device.ID, &device.Name, &profile, &device.LastSeen)
 	if err != nil {
 		return nil, err

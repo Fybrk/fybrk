@@ -63,32 +63,32 @@ type DeviceAnnouncement struct {
 
 // FileOperation represents file sync operations
 type FileOperation struct {
-	Operation string                `json:"operation"` // create, update, delete
-	Path      string                `json:"path"`
-	Metadata  *types.FileMetadata   `json:"metadata,omitempty"`
-	Chunks    []types.Chunk         `json:"chunks,omitempty"`
-	Conflict  *ConflictInfo         `json:"conflict,omitempty"`
+	Operation string              `json:"operation"` // create, update, delete
+	Path      string              `json:"path"`
+	Metadata  *types.FileMetadata `json:"metadata,omitempty"`
+	Chunks    []types.Chunk       `json:"chunks,omitempty"`
+	Conflict  *ConflictInfo       `json:"conflict,omitempty"`
 }
 
 // ConflictInfo represents sync conflicts
 type ConflictInfo struct {
-	ConflictType string            `json:"conflict_type"` // timestamp, content, delete
+	ConflictType string              `json:"conflict_type"` // timestamp, content, delete
 	LocalFile    *types.FileMetadata `json:"local_file"`
 	RemoteFile   *types.FileMetadata `json:"remote_file"`
-	Resolution   string            `json:"resolution"` // local_wins, remote_wins, merge, manual
+	Resolution   string              `json:"resolution"` // local_wins, remote_wins, merge, manual
 }
 
 // SyncStatus represents sync state
 type SyncStatus struct {
-	State        string    `json:"state"` // idle, syncing, conflict, error
-	Progress     float64   `json:"progress"`
-	FilesTotal   int       `json:"files_total"`
-	FilesSynced  int       `json:"files_synced"`
-	BytesTotal   int64     `json:"bytes_total"`
-	BytesSynced  int64     `json:"bytes_synced"`
-	LastSync     time.Time `json:"last_sync"`
-	Conflicts    int       `json:"conflicts"`
-	Errors       []string  `json:"errors,omitempty"`
+	State       string    `json:"state"` // idle, syncing, conflict, error
+	Progress    float64   `json:"progress"`
+	FilesTotal  int       `json:"files_total"`
+	FilesSynced int       `json:"files_synced"`
+	BytesTotal  int64     `json:"bytes_total"`
+	BytesSynced int64     `json:"bytes_synced"`
+	LastSync    time.Time `json:"last_sync"`
+	Conflicts   int       `json:"conflicts"`
+	Errors      []string  `json:"errors,omitempty"`
 }
 
 func NewUniversalSyncProtocol(deviceID, deviceType string) *UniversalSyncProtocol {
@@ -102,7 +102,7 @@ func NewUniversalSyncProtocol(deviceID, deviceType string) *UniversalSyncProtoco
 // CreateMessage creates a new sync message
 func (usp *UniversalSyncProtocol) CreateMessage(msgType string, payload interface{}) (*SyncMessage, error) {
 	payloadMap := make(map[string]interface{})
-	
+
 	// Convert payload to map
 	if payload != nil {
 		payloadBytes, err := json.Marshal(payload)
@@ -199,9 +199,9 @@ type AIQuery struct {
 }
 
 type AIResponse struct {
-	Response  string            `json:"response"`
-	Sources   []string          `json:"sources"`
-	Confidence float64          `json:"confidence"`
+	Response   string   `json:"response"`
+	Sources    []string `json:"sources"`
+	Confidence float64  `json:"confidence"`
 }
 
 // Future: Search structures

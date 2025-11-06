@@ -11,7 +11,7 @@ import (
 func TestChunk(t *testing.T) {
 	data := []byte("test data")
 	hash := sha256.Sum256(data)
-	
+
 	chunk := Chunk{
 		Hash:      hash,
 		Data:      data,
@@ -19,7 +19,7 @@ func TestChunk(t *testing.T) {
 		Encrypted: false,
 		CreatedAt: time.Now(),
 	}
-	
+
 	assert.Equal(t, hash, chunk.Hash)
 	assert.Equal(t, data, chunk.Data)
 	assert.Equal(t, int64(9), chunk.Size)
@@ -30,7 +30,7 @@ func TestFileMetadata(t *testing.T) {
 	path := "/test/file.txt"
 	hash := sha256.Sum256([]byte("content"))
 	chunks := [][32]byte{hash}
-	
+
 	metadata := FileMetadata{
 		Path:    path,
 		Hash:    hash,
@@ -39,7 +39,7 @@ func TestFileMetadata(t *testing.T) {
 		Chunks:  chunks,
 		Version: 1,
 	}
-	
+
 	assert.Equal(t, path, metadata.Path)
 	assert.Equal(t, hash, metadata.Hash)
 	assert.Equal(t, int64(100), metadata.Size)
@@ -60,7 +60,7 @@ func TestDevice(t *testing.T) {
 		Profile:  FullReplica,
 		LastSeen: time.Now(),
 	}
-	
+
 	assert.Equal(t, "device-123", device.ID)
 	assert.Equal(t, "Test Device", device.Name)
 	assert.Equal(t, FullReplica, device.Profile)

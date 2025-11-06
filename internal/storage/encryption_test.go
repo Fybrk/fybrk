@@ -22,7 +22,7 @@ func TestNewEncryptor(t *testing.T) {
 	t.Run("valid key size", func(t *testing.T) {
 		key := generateTestKey()
 		encryptor, err := NewEncryptor(key)
-		
+
 		require.NoError(t, err)
 		assert.NotNil(t, encryptor)
 		assert.Equal(t, key, encryptor.key)
@@ -31,7 +31,7 @@ func TestNewEncryptor(t *testing.T) {
 	t.Run("invalid key size", func(t *testing.T) {
 		invalidKey := make([]byte, 16) // Too short
 		_, err := NewEncryptor(invalidKey)
-		
+
 		assert.Equal(t, ErrInvalidKeySize, err)
 	})
 }
@@ -44,7 +44,7 @@ func TestEncryptChunk(t *testing.T) {
 	t.Run("encrypt unencrypted chunk", func(t *testing.T) {
 		originalData := []byte("test data for encryption")
 		hash := sha256.Sum256(originalData)
-		
+
 		chunk := &types.Chunk{
 			Hash:      hash,
 			Data:      originalData,
@@ -55,16 +55,16 @@ func TestEncryptChunk(t *testing.T) {
 
 		err := encryptor.EncryptChunk(chunk)
 		require.NoError(t, err)
-		
+
 		assert.True(t, chunk.Encrypted)
-		assert.NotEqual(t, originalData, chunk.Data) // Data should be different
+		assert.NotEqual(t, originalData, chunk.Data)          // Data should be different
 		assert.Greater(t, len(chunk.Data), len(originalData)) // Encrypted data is larger (nonce + ciphertext)
 	})
 
 	t.Run("encrypt already encrypted chunk", func(t *testing.T) {
 		originalData := []byte("already encrypted")
 		hash := sha256.Sum256(originalData)
-		
+
 		chunk := &types.Chunk{
 			Hash:      hash,
 			Data:      originalData,
@@ -75,7 +75,7 @@ func TestEncryptChunk(t *testing.T) {
 
 		err := encryptor.EncryptChunk(chunk)
 		require.NoError(t, err)
-		
+
 		assert.True(t, chunk.Encrypted)
 		assert.Equal(t, originalData, chunk.Data) // Data should remain unchanged
 	})
@@ -89,7 +89,7 @@ func TestDecryptChunk(t *testing.T) {
 	t.Run("decrypt encrypted chunk", func(t *testing.T) {
 		originalData := []byte("test data for decryption")
 		hash := sha256.Sum256(originalData)
-		
+
 		chunk := &types.Chunk{
 			Hash:      hash,
 			Data:      originalData,
@@ -102,14 +102,14 @@ func TestDecryptChunk(t *testing.T) {
 		err := encryptor.EncryptChunk(chunk)
 		require.NoError(t, err)
 		assert.True(t, chunk.Encrypted)
-		
+
 		encryptedData := make([]byte, len(chunk.Data))
 		copy(encryptedData, chunk.Data)
 
 		// Then decrypt
 		err = encryptor.DecryptChunk(chunk)
 		require.NoError(t, err)
-		
+
 		assert.False(t, chunk.Encrypted)
 		assert.Equal(t, originalData, chunk.Data)
 		assert.NotEqual(t, encryptedData, chunk.Data)
@@ -118,7 +118,7 @@ func TestDecryptChunk(t *testing.T) {
 	t.Run("decrypt unencrypted chunk", func(t *testing.T) {
 		originalData := []byte("not encrypted")
 		hash := sha256.Sum256(originalData)
-		
+
 		chunk := &types.Chunk{
 			Hash:      hash,
 			Data:      originalData,
@@ -129,7 +129,7 @@ func TestDecryptChunk(t *testing.T) {
 
 		err := encryptor.DecryptChunk(chunk)
 		require.NoError(t, err)
-		
+
 		assert.False(t, chunk.Encrypted)
 		assert.Equal(t, originalData, chunk.Data)
 	})
@@ -137,7 +137,7 @@ func TestDecryptChunk(t *testing.T) {
 	t.Run("decrypt with wrong key", func(t *testing.T) {
 		originalData := []byte("test data")
 		hash := sha256.Sum256(originalData)
-		
+
 		chunk := &types.Chunk{
 			Hash:      hash,
 			Data:      originalData,
@@ -185,7 +185,7 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 	for i, originalData := range testCases {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
 			hash := sha256.Sum256(originalData)
-			
+
 			chunk := &types.Chunk{
 				Hash:      hash,
 				Data:      originalData,

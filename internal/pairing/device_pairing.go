@@ -30,13 +30,13 @@ type PairingRequest struct {
 
 // PairedDevice represents a successfully paired device
 type PairedDevice struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	PublicKey   string    `json:"public_key"`
-	LastSeen    time.Time `json:"last_seen"`
-	TrustLevel  int       `json:"trust_level"` // 1=basic, 2=trusted, 3=owner
-	DeviceType  string    `json:"device_type"` // desktop, mobile, server
-	Capabilities []string `json:"capabilities"` // sync, relay, storage
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	PublicKey    string    `json:"public_key"`
+	LastSeen     time.Time `json:"last_seen"`
+	TrustLevel   int       `json:"trust_level"`  // 1=basic, 2=trusted, 3=owner
+	DeviceType   string    `json:"device_type"`  // desktop, mobile, server
+	Capabilities []string  `json:"capabilities"` // sync, relay, storage
 }
 
 // QRPairingData contains all data needed for QR code pairing
@@ -128,7 +128,7 @@ func (dpm *DevicePairingManager) InitiatePairing(qrData *QRPairingData) (*Paired
 		NetworkInfo: "local", // Will be enhanced with actual network info
 		Challenge:   qrData.Challenge,
 	}
-	
+
 	// Use the request for validation
 	_ = request
 
@@ -180,12 +180,12 @@ func detectDeviceType() string {
 
 // DeviceCapabilities represents what a device can do in the Fybrk network
 type DeviceCapabilities struct {
-	CanSync    bool `json:"can_sync"`
-	CanRelay   bool `json:"can_relay"`
-	CanStore   bool `json:"can_store"`
-	HasGUI     bool `json:"has_gui"`
-	IsMobile   bool `json:"is_mobile"`
-	IsServer   bool `json:"is_server"`
+	CanSync  bool `json:"can_sync"`
+	CanRelay bool `json:"can_relay"`
+	CanStore bool `json:"can_store"`
+	HasGUI   bool `json:"has_gui"`
+	IsMobile bool `json:"is_mobile"`
+	IsServer bool `json:"is_server"`
 }
 
 // GetDeviceName returns the device name

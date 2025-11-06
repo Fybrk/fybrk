@@ -1,77 +1,67 @@
-.PHONY: build test test-verbose clean deps lint fmt vet install
+# Fybrk - Simple P2P File Sync
+# Makefile for building and testing
 
-# Go variables
-GOCMD=go
-GOTEST=$(GOCMD) test
-GOCLEAN=$(GOCMD) clean
-GOGET=$(GOCMD) get
-GOMOD=$(GOCMD) mod
-GOFMT=$(GOCMD) fmt
-GOVET=$(GOCMD) vet
+.PHONY: all build test clean install coverage lint fmt vet
 
-# Build variables
+# Build configuration
 BINARY_NAME=fybrk
 BUILD_DIR=bin
-MAIN_PATH=./cli/cmd/fybrk
+CMD_DIR=cmd/fybrk
+PKG_DIR=pkg/core
 
-# Build binary
+# Go configuration
+GO=go
+GOFLAGS=-ldflags="-s -w"
+COVERAGE_FILE=coverage.out
+
+all: fmt vet test build
+
+# Build the binary
 build:
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 $(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
+	$(GO) build $(GOFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./$(CMD_DIR)
+	@echo "Built $(BUILD_DIR)/$(BINARY_NAME)"
 
-# Install binary
-install: 
-	@echo "Installing $(BINARY_NAME)..."
-	@mkdir -p $(BUILD_DIR)
-	CGO_ENABLED=1 $(GOCMD) build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_PATH)
-	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/
-
-# Run tests
+# Run all tests with coverage
 test:
 	@echo "Running tests..."
-	$(GOTEST) -v ./...
+	$(GO) test -v -race -coverprofile=$(COVERAGE_FILE) ./...
+	@echo "Tests completed"
 
-# Run tests with coverage
-test-coverage:
-	@echo "Running tests with coverage..."
-	$(GOTEST) -v -coverprofile=coverage.out ./...
-	$(GOCMD) tool cover -html=coverage.out -o coverage.html
+# Run tests with coverage report
+coverage: test
+	@echo "Generating coverage report..."
+	$(GO) tool cover -html=$(COVERAGE_FILE) -o coverage.html
+	$(GO) tool cover -func=$(COVERAGE_FILE)
 	@echo "Coverage report generated: coverage.html"
 
-# Run tests with race detection
-test-race:
-	@echo "Running tests with race detection..."
-	$(GOTEST) -v -race ./...
+# Run core package tests only
+test-core:
+	@echo "Running core package tests..."
+	$(GO) test -v -race -coverprofile=core_coverage.out ./$(PKG_DIR)
+	$(GO) tool cover -func=core_coverage.out
 
-# Run specific test
-test-pkg:
-	@echo "Running tests for specific package..."
-	@read -p "Enter package path (e.g., ./pkg/types): " pkg; \
-	$(GOTEST) -v $$pkg
+# Run CLI tests only  
+test-cli:
+	@echo "Running CLI tests..."
+	$(GO) test -v -race ./$(CMD_DIR)
 
-# Clean build artifacts
-clean:
-	@echo "Cleaning..."
-	$(GOCLEAN)
-	rm -rf $(BUILD_DIR)
-	rm -f coverage.out coverage.html
-
-# Install dependencies
-deps:
-	@echo "Installing dependencies..."
-	$(GOMOD) download
-	$(GOMOD) tidy
+# Install binary to GOPATH/bin
+install: build
+	@echo "Installing $(BINARY_NAME)..."
+	$(GO) install ./$(CMD_DIR)
+	@echo "Installed $(BINARY_NAME) to $(shell go env GOPATH)/bin"
 
 # Format code
 fmt:
 	@echo "Formatting code..."
-	$(GOFMT) ./...
+	$(GO) fmt ./...
 
 # Vet code
 vet:
 	@echo "Vetting code..."
-	$(GOVET) ./...
+	$(GO) vet ./...
 
 # Lint code (requires golangci-lint)
 lint:
@@ -79,32 +69,69 @@ lint:
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run; \
 	else \
-		echo "golangci-lint not installed. Install with: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		echo "golangci-lint not installed, skipping..."; \
 	fi
 
-# Run all checks
-check: fmt vet lint test
+# Clean build artifacts
+clean:
+	@echo "Cleaning..."
+	rm -rf $(BUILD_DIR)
+	rm -f $(COVERAGE_FILE) core_coverage.out coverage.html
+	$(GO) clean
 
-# Development workflow
-dev: deps fmt vet test
+# Development helpers
+dev-deps:
+	@echo "Installing development dependencies..."
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# Quick development cycle
+dev: fmt vet test-core build
+	@echo "Development build complete"
+
+# Integration test (builds and runs basic functionality)
+integration: build
+	@echo "Running integration test..."
+	@mkdir -p test_temp
+	@cd test_temp && ../$(BUILD_DIR)/$(BINARY_NAME) help
+	@rm -rf test_temp
+	@echo "Integration test passed"
+
+# Benchmark tests
+bench:
+	@echo "Running benchmarks..."
+	$(GO) test -bench=. -benchmem ./...
+
+# Check for race conditions
+race:
+	@echo "Running race detection tests..."
+	$(GO) test -race ./...
+
+# Generate test coverage badge (requires gopherbadger)
+badge:
+	@if command -v gopherbadger >/dev/null 2>&1; then \
+		gopherbadger -png -o coverage_badge.png; \
+	else \
+		echo "gopherbadger not installed, install with: go install github.com/jpoles1/gopherbadger@latest"; \
+	fi
 
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  build         - Build fybrk binary"
-	@echo "  install       - Build and install fybrk binary"
-	@echo "  test          - Run all tests"
-	@echo "  test-coverage - Run tests with coverage report"
-	@echo "  test-race     - Run tests with race detection"
-	@echo "  test-pkg      - Run tests for specific package"
-	@echo "  clean         - Clean build artifacts"
-	@echo "  deps          - Install dependencies"
-	@echo "  fmt           - Format code"
-	@echo "  vet           - Vet code"
-	@echo "  lint          - Lint code (requires golangci-lint)"
-	@echo "  check         - Run all checks (fmt, vet, lint, test)"
-	@echo "  dev           - Development workflow (deps, fmt, vet, test)"
-	@echo "  help          - Show this help"
-
-# Default target
-default: help
+	@echo "  all         - Format, vet, test, and build"
+	@echo "  build       - Build the binary"
+	@echo "  test        - Run all tests with coverage"
+	@echo "  test-core   - Run core package tests only"
+	@echo "  test-cli    - Run CLI tests only"
+	@echo "  coverage    - Generate HTML coverage report"
+	@echo "  install     - Install binary to GOPATH/bin"
+	@echo "  fmt         - Format code"
+	@echo "  vet         - Vet code"
+	@echo "  lint        - Lint code (requires golangci-lint)"
+	@echo "  clean       - Clean build artifacts"
+	@echo "  dev-deps    - Install development dependencies"
+	@echo "  dev         - Quick development cycle (fmt, vet, test-core, build)"
+	@echo "  integration - Build and run basic integration test"
+	@echo "  bench       - Run benchmark tests"
+	@echo "  race        - Run race detection tests"
+	@echo "  badge       - Generate coverage badge (requires gopherbadger)"
+	@echo "  help        - Show this help"

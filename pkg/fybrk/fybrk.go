@@ -16,11 +16,11 @@ type Client struct {
 
 // Config holds configuration for Fybrk client
 type Config struct {
-	SyncPath   string
-	DBPath     string
-	DeviceID   string
-	ChunkSize  int
-	Key        []byte
+	SyncPath  string
+	DBPath    string
+	DeviceID  string
+	ChunkSize int
+	Key       []byte
 }
 
 // NewClient creates a new Fybrk client

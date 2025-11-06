@@ -15,9 +15,9 @@ func TestNewFileWatcher(t *testing.T) {
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	require.NotNil(t, watcher)
-	
+
 	defer watcher.Close()
-	
+
 	assert.NotNil(t, watcher.watcher)
 	assert.NotNil(t, watcher.events)
 	assert.NotNil(t, watcher.errors)
@@ -28,19 +28,19 @@ func TestNewFileWatcher(t *testing.T) {
 func TestAddPathFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	// Create test file
 	err := os.WriteFile(testFile, []byte("test"), 0644)
 	require.NoError(t, err)
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	// Add file path (should watch parent directory)
 	err = watcher.AddPath(testFile)
 	require.NoError(t, err)
-	
+
 	// Parent directory should be watched
 	assert.True(t, watcher.watchDirs[tmpDir])
 }
@@ -50,15 +50,15 @@ func TestAddPathDirectory(t *testing.T) {
 	subDir := filepath.Join(tmpDir, "subdir")
 	err := os.Mkdir(subDir, 0755)
 	require.NoError(t, err)
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	// Add directory path
 	err = watcher.AddPath(tmpDir)
 	require.NoError(t, err)
-	
+
 	// Both directories should be watched
 	assert.True(t, watcher.watchDirs[tmpDir])
 	assert.True(t, watcher.watchDirs[subDir])
@@ -68,23 +68,23 @@ func TestAddPathNonexistent(t *testing.T) {
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	err = watcher.AddPath("/nonexistent/path")
 	assert.Error(t, err)
 }
 
 func TestRemovePath(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	// Add path
 	err = watcher.AddPath(tmpDir)
 	require.NoError(t, err)
 	assert.True(t, watcher.watchDirs[tmpDir])
-	
+
 	// Remove path
 	err = watcher.RemovePath(tmpDir)
 	require.NoError(t, err)
@@ -94,19 +94,19 @@ func TestRemovePath(t *testing.T) {
 func TestFileEvents(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	// Add directory to watch
 	err = watcher.AddPath(tmpDir)
 	require.NoError(t, err)
-	
+
 	// Create file and wait for event
 	err = os.WriteFile(testFile, []byte("test content"), 0644)
 	require.NoError(t, err)
-	
+
 	// Wait for create event
 	select {
 	case event := <-watcher.Events():
@@ -115,11 +115,11 @@ func TestFileEvents(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for create event")
 	}
-	
+
 	// Modify file
 	err = os.WriteFile(testFile, []byte("modified content"), 0644)
 	require.NoError(t, err)
-	
+
 	// Wait for write event
 	select {
 	case event := <-watcher.Events():
@@ -128,11 +128,11 @@ func TestFileEvents(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for write event")
 	}
-	
+
 	// Remove file
 	err = os.Remove(testFile)
 	require.NoError(t, err)
-	
+
 	// Wait for remove event
 	select {
 	case event := <-watcher.Events():
@@ -146,19 +146,19 @@ func TestFileEvents(t *testing.T) {
 func TestDirectoryCreation(t *testing.T) {
 	tmpDir := t.TempDir()
 	newDir := filepath.Join(tmpDir, "newdir")
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	// Add parent directory to watch
 	err = watcher.AddPath(tmpDir)
 	require.NoError(t, err)
-	
+
 	// Create new directory
 	err = os.Mkdir(newDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Wait for create event
 	select {
 	case event := <-watcher.Events():
@@ -167,10 +167,10 @@ func TestDirectoryCreation(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timeout waiting for directory create event")
 	}
-	
+
 	// Give some time for the watcher to add the new directory
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// New directory should now be watched
 	watcher.mu.RLock()
 	watched := watcher.watchDirs[newDir]
@@ -184,7 +184,7 @@ func TestErrors(t *testing.T) {
 		t.Fatalf("Failed to create file watcher: %v", err)
 	}
 	defer watcher.Close()
-	
+
 	errors := watcher.Errors()
 	if errors == nil {
 		t.Error("Expected errors channel to be available")
@@ -194,10 +194,10 @@ func TestErrors(t *testing.T) {
 func TestClose(t *testing.T) {
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
-	
+
 	err = watcher.Close()
 	assert.NoError(t, err)
-	
+
 	// Events channel should be closed after some time
 	select {
 	case _, ok := <-watcher.Events():
@@ -211,25 +211,25 @@ func TestClose(t *testing.T) {
 
 func TestEventChannelCapacity(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	watcher, err := NewFileWatcher()
 	require.NoError(t, err)
 	defer watcher.Close()
-	
+
 	err = watcher.AddPath(tmpDir)
 	require.NoError(t, err)
-	
+
 	// Create many files quickly to test channel capacity
 	for i := 0; i < 150; i++ { // More than channel capacity (100)
 		testFile := filepath.Join(tmpDir, fmt.Sprintf("test%d.txt", i))
 		err := os.WriteFile(testFile, []byte("test"), 0644)
 		require.NoError(t, err)
 	}
-	
+
 	// Should receive some events (channel might drop some due to capacity)
 	eventCount := 0
 	timeout := time.After(3 * time.Second)
-	
+
 	for eventCount < 50 { // Expect at least some events
 		select {
 		case <-watcher.Events():
@@ -238,6 +238,6 @@ func TestEventChannelCapacity(t *testing.T) {
 			break
 		}
 	}
-	
+
 	assert.Greater(t, eventCount, 0, "Should receive at least some events")
 }

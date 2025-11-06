@@ -27,23 +27,23 @@ func TestChunkFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("Hello, Fybrk! This is test data for chunking.")
-	
+
 	err := os.WriteFile(testFile, testData, 0644)
 	require.NoError(t, err)
 
 	t.Run("chunk small file", func(t *testing.T) {
 		chunker := NewChunker(1024) // 1KB chunks
 		chunks, err := chunker.ChunkFile(testFile)
-		
+
 		require.NoError(t, err)
 		assert.Len(t, chunks, 1) // Small file should be one chunk
-		
+
 		// Verify chunk data
 		chunk := chunks[0]
 		assert.Equal(t, testData, chunk.Data)
 		assert.Equal(t, int64(len(testData)), chunk.Size)
 		assert.False(t, chunk.Encrypted)
-		
+
 		// Verify hash
 		expectedHash := sha256.Sum256(testData)
 		assert.Equal(t, expectedHash, chunk.Hash)
@@ -52,10 +52,10 @@ func TestChunkFile(t *testing.T) {
 	t.Run("chunk file with multiple chunks", func(t *testing.T) {
 		chunker := NewChunker(10) // Very small chunks to force multiple
 		chunks, err := chunker.ChunkFile(testFile)
-		
+
 		require.NoError(t, err)
 		assert.Greater(t, len(chunks), 1) // Should have multiple chunks
-		
+
 		// Verify total size
 		totalSize := int64(0)
 		for _, chunk := range chunks {
@@ -74,21 +74,21 @@ func TestChunkFile(t *testing.T) {
 func TestReassembleChunks(t *testing.T) {
 	originalData := []byte("Test data for reassembly")
 	chunker := NewChunker(10) // Small chunks
-	
+
 	// Create temporary file
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	err := os.WriteFile(testFile, originalData, 0644)
 	require.NoError(t, err)
-	
+
 	// Chunk the file
 	chunks, err := chunker.ChunkFile(testFile)
 	require.NoError(t, err)
-	
+
 	// Reassemble
 	reassembled, err := chunker.ReassembleChunks(chunks)
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, originalData, reassembled)
 }
 
@@ -98,25 +98,25 @@ func TestChunkIntegrity(t *testing.T) {
 	for i := range testData {
 		testData[i] = byte(i % 256)
 	}
-	
+
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "integrity_test.bin")
 	err := os.WriteFile(testFile, testData, 0644)
 	require.NoError(t, err)
-	
+
 	chunker := NewChunker(1024) // 1KB chunks
-	
+
 	// Chunk
 	chunks, err := chunker.ChunkFile(testFile)
 	require.NoError(t, err)
-	
+
 	// Reassemble
 	reassembled, err := chunker.ReassembleChunks(chunks)
 	require.NoError(t, err)
-	
+
 	// Verify integrity
 	assert.Equal(t, testData, reassembled)
-	
+
 	// Verify each chunk has correct hash
 	offset := 0
 	for _, chunk := range chunks {

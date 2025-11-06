@@ -37,7 +37,7 @@ func NewUPnPClient() (*UPnPClient, error) {
 func (u *UPnPClient) AddPortMapping(externalPort, internalPort int, protocol string) error {
 	// Simple UPnP port mapping request
 	soapAction := `"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"`
-	
+
 	body := fmt.Sprintf(`<?xml version="1.0"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 <s:Body>
@@ -79,7 +79,7 @@ func (u *UPnPClient) AddPortMapping(externalPort, internalPort int, protocol str
 // RemovePortMapping removes the port forwarding rule
 func (u *UPnPClient) RemovePortMapping(externalPort int, protocol string) error {
 	soapAction := `"urn:schemas-upnp-org:service:WANIPConnection:1#DeletePortMapping"`
-	
+
 	body := fmt.Sprintf(`<?xml version="1.0"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
 <s:Body>
@@ -143,7 +143,7 @@ func discoverGateway() (string, error) {
 	}
 
 	response := string(buffer[:n])
-	
+
 	// Extract LOCATION header
 	lines := strings.Split(response, "\r\n")
 	for _, line := range lines {

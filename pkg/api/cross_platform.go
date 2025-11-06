@@ -44,26 +44,26 @@ type DeviceInfo struct {
 
 // SyncStats represents sync statistics for UI display
 type SyncStats struct {
-	TotalFiles      int       `json:"total_files"`
-	SyncedFiles     int       `json:"synced_files"`
-	TotalSize       int64     `json:"total_size"`
-	SyncedSize      int64     `json:"synced_size"`
-	LastSync        time.Time `json:"last_sync"`
-	SyncInProgress  bool      `json:"sync_in_progress"`
-	ConnectedDevices int      `json:"connected_devices"`
-	Conflicts       int       `json:"conflicts"`
+	TotalFiles       int       `json:"total_files"`
+	SyncedFiles      int       `json:"synced_files"`
+	TotalSize        int64     `json:"total_size"`
+	SyncedSize       int64     `json:"synced_size"`
+	LastSync         time.Time `json:"last_sync"`
+	SyncInProgress   bool      `json:"sync_in_progress"`
+	ConnectedDevices int       `json:"connected_devices"`
+	Conflicts        int       `json:"conflicts"`
 }
 
 // QRCodeData represents QR code data for device pairing
 type QRCodeData struct {
-	ImageData []byte `json:"image_data"`
-	TextData  string `json:"text_data"`
+	ImageData []byte    `json:"image_data"`
+	TextData  string    `json:"text_data"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
 func NewCrossPlatformAPI(engine *sync.Engine, deviceID, deviceName, deviceType string) *CrossPlatformAPI {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &CrossPlatformAPI{
 		engine:         engine,
 		protocol:       protocol.NewUniversalSyncProtocol(deviceID, deviceType),
@@ -250,7 +250,7 @@ func (api *CrossPlatformAPI) ImportConfig(configData []byte) error {
 	if err := json.Unmarshal(configData, &config); err != nil {
 		return err
 	}
-	
+
 	// This would restore the configuration
 	api.emitEvent("config.imported", config)
 	return nil

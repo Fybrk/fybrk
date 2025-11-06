@@ -24,26 +24,30 @@ jobs:
     - name: Build binaries
       run: |
         # Linux AMD64
-        GOOS=linux GOARCH=amd64 go build -o fybrk-linux-amd64 ./cli/cmd/fybrk
+        GOOS=linux GOARCH=amd64 go build -o fybrk-linux-amd64 ./cmd/fybrk
         
         # Linux ARM64
-        GOOS=linux GOARCH=arm64 go build -o fybrk-linux-arm64 ./cli/cmd/fybrk
+        GOOS=linux GOARCH=arm64 go build -o fybrk-linux-arm64 ./cmd/fybrk
         
         # Linux x86 (32-bit)
-        GOOS=linux GOARCH=386 go build -o fybrk-linux-386 ./cli/cmd/fybrk
+        GOOS=linux GOARCH=386 go build -o fybrk-linux-386 ./cmd/fybrk
         
         # macOS AMD64
-        GOOS=darwin GOARCH=amd64 go build -o fybrk-darwin-amd64 ./cli/cmd/fybrk
+        GOOS=darwin GOARCH=amd64 go build -o fybrk-darwin-amd64 ./cmd/fybrk
         
         # macOS ARM64 (Apple Silicon)
-        GOOS=darwin GOARCH=arm64 go build -o fybrk-darwin-arm64 ./cli/cmd/fybrk
+        GOOS=darwin GOARCH=arm64 go build -o fybrk-darwin-arm64 ./cmd/fybrk
         
         # Windows AMD64
-        GOOS=windows GOARCH=amd64 go build -o fybrk-windows-amd64.exe ./cli/cmd/fybrk
+        GOOS=windows GOARCH=amd64 go build -o fybrk-windows-amd64.exe ./cmd/fybrk
         
         # Windows x86 (32-bit)
-        GOOS=windows GOARCH=386 go build -o fybrk-windows-386.exe ./cli/cmd/fybrk
+        GOOS=windows GOARCH=386 go build -o fybrk-windows-386.exe ./cmd/fybrk
     
+    - name: Run Tests
+      run: |
+        go test ./...
+        
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -56,3 +60,21 @@ jobs:
           fybrk-windows-amd64.exe
           fybrk-windows-386.exe
         generate_release_notes: true
+        body: |
+          ## Fybrk - Your files, everywhere, private by design
+          
+          **True 2-way sync**: Changes on any device instantly appear on all connected devices.
+          
+          ### What's Working
+          - ✅ Real-time file sync (create/modify/delete)
+          - ✅ WebSocket P2P communication
+          - ✅ SQLite database tracking
+          - ✅ Hash-based deduplication
+          - ✅ Zero configuration required
+          
+          ### Usage
+          ```bash
+          fybrk                          # Sync current directory
+          fybrk /path/to/folder          # Sync specific directory
+          fybrk 'fybrk://pair?key=...'   # Join existing sync
+          ```

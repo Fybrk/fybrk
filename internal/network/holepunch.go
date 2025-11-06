@@ -121,13 +121,13 @@ func (hp *HolePuncher) PunchHole(peerPublicIP net.IP, peerPublicPort int, peerPr
 	}
 
 	punchData := []byte("FYBRK_HOLE_PUNCH")
-	
+
 	// Enhanced hole punching with exponential backoff
 	for attempt := 0; attempt < 20; attempt++ {
 		for _, addr := range attempts {
 			conn.WriteToUDP(punchData, &addr)
 		}
-		
+
 		// Exponential backoff: 50ms, 100ms, 200ms, then 500ms
 		delay := time.Duration(50*(1<<min(attempt/5, 3))) * time.Millisecond
 		time.Sleep(delay)

@@ -15,12 +15,12 @@ type Chunk struct {
 
 // FileMetadata represents file information in the sync system
 type FileMetadata struct {
-	Path      string    `json:"path"`
-	Hash      [32]byte  `json:"hash"`
-	Size      int64     `json:"size"`
-	ModTime   time.Time `json:"mod_time"`
-	Chunks    [][32]byte `json:"chunks"`
-	Version   int64     `json:"version"`
+	Path    string     `json:"path"`
+	Hash    [32]byte   `json:"hash"`
+	Size    int64      `json:"size"`
+	ModTime time.Time  `json:"mod_time"`
+	Chunks  [][32]byte `json:"chunks"`
+	Version int64      `json:"version"`
 }
 
 // DeviceProfile defines how a device handles data
@@ -34,10 +34,10 @@ const (
 
 // Device represents a node in the Fybrk network
 type Device struct {
-	ID      string        `json:"id"`
-	Name    string        `json:"name"`
-	Profile DeviceProfile `json:"profile"`
-	LastSeen time.Time    `json:"last_seen"`
+	ID       string        `json:"id"`
+	Name     string        `json:"name"`
+	Profile  DeviceProfile `json:"profile"`
+	LastSeen time.Time     `json:"last_seen"`
 }
 
 // SyncEvent represents a synchronization event

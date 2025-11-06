@@ -18,7 +18,7 @@ func TestNewMetadataStore(t *testing.T) {
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	require.NotNil(t, store)
-	
+
 	defer store.Close()
 
 	// Verify tables were created
@@ -31,7 +31,7 @@ func TestNewMetadataStore(t *testing.T) {
 func TestStoreAndGetFileMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -39,7 +39,7 @@ func TestStoreAndGetFileMetadata(t *testing.T) {
 	// Create test metadata
 	hash := sha256.Sum256([]byte("test content"))
 	chunks := [][32]byte{hash}
-	
+
 	metadata := &types.FileMetadata{
 		Path:    "/test/file.txt",
 		Hash:    hash,
@@ -56,7 +56,7 @@ func TestStoreAndGetFileMetadata(t *testing.T) {
 	// Retrieve metadata
 	retrieved, err := store.GetFileMetadata("/test/file.txt")
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, metadata.Path, retrieved.Path)
 	assert.Equal(t, metadata.Hash, retrieved.Hash)
 	assert.Equal(t, metadata.Size, retrieved.Size)
@@ -68,7 +68,7 @@ func TestStoreAndGetFileMetadata(t *testing.T) {
 func TestGetNonexistentFileMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -80,7 +80,7 @@ func TestGetNonexistentFileMetadata(t *testing.T) {
 func TestListFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -123,7 +123,7 @@ func TestListFiles(t *testing.T) {
 func TestDeleteFileMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -157,7 +157,7 @@ func TestDeleteFileMetadata(t *testing.T) {
 func TestStoreAndGetDevice(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -177,7 +177,7 @@ func TestStoreAndGetDevice(t *testing.T) {
 	// Retrieve device
 	retrieved, err := store.GetDevice("device-123")
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, device.ID, retrieved.ID)
 	assert.Equal(t, device.Name, retrieved.Name)
 	assert.Equal(t, device.Profile, retrieved.Profile)
@@ -187,7 +187,7 @@ func TestStoreAndGetDevice(t *testing.T) {
 func TestGetNonexistentDevice(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -199,7 +199,7 @@ func TestGetNonexistentDevice(t *testing.T) {
 func TestUpdateFileMetadata(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	
+
 	store, err := NewMetadataStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -230,7 +230,7 @@ func TestUpdateFileMetadata(t *testing.T) {
 	// Retrieve updated metadata
 	retrieved, err := store.GetFileMetadata("/test/file.txt")
 	require.NoError(t, err)
-	
+
 	assert.Equal(t, newHash, retrieved.Hash)
 	assert.Equal(t, int64(20), retrieved.Size)
 	assert.Equal(t, int64(2), retrieved.Version)

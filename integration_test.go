@@ -129,15 +129,15 @@ func TestFileVersioningIntegration(t *testing.T) {
 
 	// Create test file
 	testFile := filepath.Join(syncDir, "version_test.txt")
-	
+
 	// Version 1
 	content1 := []byte("Version 1 content")
 	err = os.WriteFile(testFile, content1, 0644)
 	require.NoError(t, err)
-	
+
 	err = engine.ScanDirectory()
 	require.NoError(t, err)
-	
+
 	files, err := engine.GetSyncedFiles()
 	require.NoError(t, err)
 	require.Len(t, files, 1)
@@ -148,10 +148,10 @@ func TestFileVersioningIntegration(t *testing.T) {
 	content2 := []byte("Version 2 content - updated!")
 	err = os.WriteFile(testFile, content2, 0644)
 	require.NoError(t, err)
-	
+
 	err = engine.ScanDirectory()
 	require.NoError(t, err)
-	
+
 	files, err = engine.GetSyncedFiles()
 	require.NoError(t, err)
 	require.Len(t, files, 1)
@@ -208,10 +208,10 @@ func TestEncryptionIntegration(t *testing.T) {
 	files, err := engine.GetSyncedFiles()
 	require.NoError(t, err)
 	require.Len(t, files, 1)
-	
+
 	// Verify the file has chunks
 	assert.NotEmpty(t, files[0].Chunks)
-	
+
 	// Test that chunks can be encrypted and decrypted
 	chunks, err := chunker.ChunkFile(testFile)
 	require.NoError(t, err)
@@ -221,14 +221,14 @@ func TestEncryptionIntegration(t *testing.T) {
 	for i := range chunks {
 		originalData := make([]byte, len(chunks[i].Data))
 		copy(originalData, chunks[i].Data)
-		
+
 		err = encryptor.EncryptChunk(&chunks[i])
 		require.NoError(t, err)
 		assert.True(t, chunks[i].Encrypted)
-		
+
 		// Verify data is actually encrypted (different from original)
 		assert.NotEqual(t, originalData, chunks[i].Data)
-		
+
 		// Decrypt and verify
 		err = encryptor.DecryptChunk(&chunks[i])
 		require.NoError(t, err)
